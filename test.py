@@ -11,3 +11,11 @@ site.include_body = True
 print 'Downloading user information for user #150...'
 user = site.user(150)
 print repr(user)
+
+## 2.) Get question #4 150
+print 'Downloading question #4...'
+question = site.question(4)
+print repr(question)
+
+## f.) Print rate info
+print '-> Finished. (requests, total) = %s' % repr(site.rate_limit)

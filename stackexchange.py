@@ -121,11 +121,17 @@ class Answer(JSONModel):
 
 	def _extend(self, json, site):
 		self.id = json.answer_id
-		self.comments = site.build_from_snippet(json.comments, Comment) if ('comment' in json._params_ and json._params_['comment']) else StackExchangeLazySequence(Comment, None, site, json.answer_comments_url, self._up('comments'))
+
+		if not hasattr(json, '_params_'):
+			comment = False
+		else:
+			comment = ('comment' in json._params_ and json._params_['comment'])
+		self.comments = site.build_from_snippet(json.comments, Comment) if comment else StackExchangeLazySequence(Comment, None, site, json.answer_comments_url, self._up('comments'))
 
 		self._question, self._owner = None, None
-		self.owner_id = json.owner['user_id']
-		self.owner_info = tuple(json.owner.values())
+		if hasattr(json, 'owner'):
+			self.owner_id = json.owner['user_id']
+			self.owner_info = tuple(json.owner.values())
 
 		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
 
@@ -139,8 +145,32 @@ class Answer(JSONModel):
 	question = property(lambda self: self._question if self._question is not None else self.site.question(self.qustion_id))
 	owner = property(lambda self: self._owner if self._owner is not None else self.site.user(self.owner_id))
 
-class Question(object):
-	pass
+	def __unicode__(self):
+		return u'Answer %d [%s]' % (self.id, self.title)
+	def __str__(self):
+		return str(unicode(self))
+
+class Question(JSONModel):
+	transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count', 'view_count', 'score', 'community_owned', 'title', 'body')
+
+	def _extend(self, json, site):
+		self.id = json.question_id
+
+		self.timeline = LazyTimeline(self, json.question_timeline_url, self._up('timeline'))
+
+		self.comments_url = json.question_comments_url
+		self.comments = StackExchangeLazySequence(Comment, None, site, self.comments_url, self._up('comments'))
+
+		self.answers_url = json.question_answers_url
+		self.answers = [Answer(x, site) for x in json.answers]
+
+		self.owner_id = json.owner['user_id']
+		self.owner = User.partial(lambda self: self.site.user(self.id), site, {
+			'id': self.owner_id,
+			'user_type': UserType.from_string(json.owner['user_type']),
+			'display_name': json.owner['display_name'],
+			'reputation': json.owner['reputation'],
+			'email_hash': json.owner['email_hash']})
 
 class Comment(JSONModel):
 	transfer = ('post_id', 'score', 'edit_count', 'body')
@@ -171,6 +201,11 @@ class Comment(JSONModel):
 			return self.site.question(self.post_id)
 		elif self.post_type == PostType.Answer:
 			return self.site.answer(self.post_id)
+	
+	def __unicode__(self):
+		return u'Comment ' + str(self.id)
+	def __str__(self):
+		return str(unicode(self))
 
 
 ##### Users ####
@@ -219,14 +254,23 @@ class User(JSONModel):
 		self.reputation_detail = StackExchangeLazySequence(RepChange, None, site, json.user_reputation_url, self._up('reputation_detail'))
 
 		self.vote_counts = (self.up_vote_count, self.down_vote_count)
-		self.badge_counts_t = (json.badge_counts['gold'], json.badge_counts['silver'], json.badge_counts['bronze'])
+
+		gold = json.badge_counts['gold'] if 'gold' in json.badge_counts else 0
+		silver = json.badge_counts['silver'] if 'silver' in json.badge_counts else 0
+		bronze = json.badge_counts['bronze'] if 'bronze' in json.badge_counts else 0
+		self.badge_counts_t = (gold, silver, bronze)
 		self.badge_counts = {
-			BadgeType.Gold: json.badge_counts['gold'],
-			BadgeType.Silver: json.badge_counts['silver'],
-			BadgeType.Bronze: json.badge_counts['bronze']
+			BadgeType.Gold:   gold,
+			BadgeType.Silver: silver,
+			BadgeType.Bronze: bronze
 		}
 		self.gold_badges, self.silver_badges, self.bronze_badges = self.badge_counts_t
 		self.badge_total = reduce(operator.add, self.badge_counts_t)
+	
+	def __unicode__(self):
+		return 'User %d [%s]' % (self.id, self.display_name)
+	def __str__(self):
+		return str(unicode(self))
 
 
 class Site(object):
@@ -242,6 +286,7 @@ class Site(object):
 		User: 'users/%s',
 		Answer: 'answers/%s',
 		Comment: 'comments/%s',
+		Question: 'questions/%s',
 	}
 	
 	def _request(self, to, params):
@@ -265,6 +310,11 @@ class Site(object):
 		try:
 			conn = urllib2.urlopen(url)
 			dump = json.load(conn)
+
+			info = conn.info()
+			self.rate_limit = (int(info.getheader('X-RateLimit-Current')), int(info.getheader('X-RateLimit-Max')))
+			self.requests_left = self.rate_limit[1] - self.rate_limit[0]
+
 			conn.close()
 
 			return dump
@@ -296,6 +346,10 @@ class Site(object):
 	def build_from_snippet(self, json, typ):
 		return StackExchangeResultSet([typ(x, self) for x in json])
 	
+	def _get(self, typ, ids, coll, kw):
+		root = self.URL_Roots[typ] % ';'.join([str(x) for x in ids])
+		return self.build(root, typ, coll, kw)
+
 	def user(self, nid, **kw):
 		"""Retrieves an object representing the user with the ID `nid`."""
 		u, = self.users((nid,), **kw)
@@ -303,21 +357,25 @@ class Site(object):
 	
 	def users(self, ids, **kw):
 		"""Retrieves a list of the users with the IDs specified in the `ids' parameter."""
-		root = self.URL_Roots[User] % ';'.join([str(x) for x in ids])
-		return self.build(root, User, 'users', kw)
+		return self._get(User, ids, 'users', kw)
 
 	def answer(self, nid, **kw):
 		a, = self.answers((nid,), **kw)
 		return a
 	
 	def answers(self, ids, **kw):
-		root = self.URL_Roots[Answer] % ';'.join([str(x) for x in ids])
-		return self.build(root, Answer, 'answers', kw)
+		return self._get(Answer, ids, 'answers', kw)
 
 	def comment(self, nid, **kw):
 		c, = self.comments((nid,), **kw)
 		return c
 	
 	def comments(self, ids, **kw):
-		root = self.URL_Roots[Comment] % ';'.join([str(x) for x in ids])
-		return self.build(root, Comment, 'comments', kw)
+		return self._get(Comment, ids, 'comments', kw)
+	
+	def question(self, nid, **kw):
+		q, = self.questions((nid,), **kw)
+		return q
+	
+	def questions(self, ids, **kw):
+		return self._get(Question, ids, 'questions', kw)
