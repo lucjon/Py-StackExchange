@@ -29,9 +29,12 @@ class StackExchangeResultset(tuple):
 		self.pagesize = pagesize
 
 class Enumeration(object):
-	@staticmethod
-	def from_string(text, typ):
-		return getattr(typ, text[0].upper() + text[1:])
+	@classmethod
+	def from_string(cls, text, typ=None):
+		if typ is not None:
+			return getattr(typ, text[0].upper() + text[1:])
+		else:
+			return cls.from_string(text, cls)
 
 ##### Lazy Collections ###
 class LazyTimeline(object):
@@ -72,15 +75,38 @@ class StackExchangeLazySequence(list):
 
 ## JSONModel base class
 class JSONModel(object):
-	def __init__(self, json, site):
+	def __init__(self, json, site, skip_ext=False):
 		self.json_ob = DictObject(**json)
 		self.site = site
 
 		for f in [x for x in self.transfer if hasattr(self.json_ob, x)]:
 			setattr(self, f, getattr(self.json_ob, f))
 
-		if hasattr(self, '_extend'):
+		if hasattr(self, '_extend') and not skip_ext:
 			self._extend(self.json_ob, site)
+
+	def fetch(self):
+		if hasattr(self, 'fetch_callback'):
+			res = self.fetch_callback(self, self.site)
+
+			if isinstance(res, dict):
+				self.__init__(res, self.site)
+			elif hasattr(res, 'json_ob'):
+				self.__init__(res.json_ob, self.site)
+			else:
+				raise ValueError('Supplied fetch callback did not return a usable value.')
+		else:
+			return False
+	
+	# Allows the easy creation of updateable, partial classes
+	@classmethod
+	def partial(cls, fetch_callback, site, populate):
+		model = cls({}, site, True)
+		
+		for k, v in populate.iteritems():
+			setattr(model, k, v)
+
+		model.fetch_callback = fetch_callback
 
 	# for use with Lazy classes that need a callback to actually set the model property
 	def _up(self, a):
@@ -117,7 +143,35 @@ class Question(object):
 	pass
 
 class Comment(JSONModel):
-	pass
+	transfer = ('post_id', 'score', 'edit_count', 'body')
+	def _extend(self, json, site):
+		self.id = json.comment_id
+		
+		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+		self.owner_id = json.owner['owner_id'] if 'owner_id' in json.owner else json.owner['user_id']
+		self.owner = User.partial(lambda self: self.site.user(self.id), site, {
+			'id': self.owner_id, 
+			'user_type': Enumeration.from_string(json.owner['user_type'], UserType),
+			'display_name': json.owner['display_name'],
+			'reputation': json.owner['reputation'],
+			'email_hash': json.owner['email_hash']})
+		
+		if hasattr(json, 'reply_to'):
+			self.reply_to_user_id = json.reply_to['user_id']
+			self.reply_to = User.partial(lambda self: self.site.user(self.id), site, {
+				'id': self.reply_to_user_id,
+				'user_type': Enumeration.from_string(json.reply_to['user_type'], UserType),
+				'display_name': json.reply_to['display_name'],
+				'reputation': json.reply_to['reputation'],
+				'email_hash': json.reply_to['email_hash']})
+		
+		self.post_type = PostType.from_string(json.post_type)
+	def get_post(self):
+		if self.post_type == PostType.Question:
+			return self.site.question(self.post_id)
+		elif self.post_type == PostType.Answer:
+			return self.site.answer(self.post_id)
+
 
 ##### Users ####
 class Mention(object):
@@ -137,6 +191,9 @@ class Badge(object):
 
 class RepChange(object):
 	pass
+
+class PostType(Enumeration):
+	Question, Answer = range(2)
 
 class UserType(Enumeration):
 	Anonymous, Unregistered, Registered, Moderator = range(4)
@@ -183,7 +240,8 @@ class Site(object):
 	
 	URL_Roots = {
 		User: 'users/%s',
-		Answer: 'answers/%s'
+		Answer: 'answers/%s',
+		Comment: 'comments/%s',
 	}
 	
 	def _request(self, to, params):
@@ -255,3 +313,11 @@ class Site(object):
 	def answers(self, ids, **kw):
 		root = self.URL_Roots[Answer] % ';'.join([str(x) for x in ids])
 		return self.build(root, Answer, 'answers', kw)
+
+	def comment(self, nid, **kw):
+		c, = self.comments((nid,), **kw)
+		return c
+	
+	def comments(self, ids, **kw):
+		root = self.URL_Roots[Comment] % ';'.join([str(x) for x in ids])
+		return self.build(root, Comment, 'comments', kw)
