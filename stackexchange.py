@@ -37,7 +37,10 @@ class StackExchangeResultset(tuple):
 	
 	def fetch_extended(self, page):
 		next = self.fetch_page(page)
-		return self + next
+		extended = self + next
+
+		# max(0, ...) is so a non-zero, positive result for page is always found
+		return StackExchangeResultset(extended, max(1, self.page - 1), self.pagesize + next.pagesize, self.build_info)
 
 	def fetch_next(self):
 		return self.fetch_page(self.page + 1)
