@@ -22,11 +22,8 @@ class StackExchangeError(Exception):
 
 class StackExchangeResultset(tuple):
 	def __new__(cls, items, page, pagesize):
-		ob = tuple(items)
-		return ob
-	def __init__(self, items, page, pagesize):
-		self.page = page
-		self.pagesize = pagesize
+		cls.page, cls.pagesize = page, pagesize
+		return tuple.__new__(cls, items)
 
 class Enumeration(object):
 	@classmethod
@@ -224,8 +221,11 @@ class Favorite(object):
 class BadgeType(Enumeration):
 	Bronze, Silver, Gold = range(3)
 
-class Badge(object):
-	pass
+class Badge(JSONModel):
+	transfer = ('name', 'description', 'award_count', 'tag_based')
+	def _extend(self, json, site):
+		self.id = json.badge_id
+		self.recipients = StackExchangeLazySequence(User, None, site, json.badges_recipients_url, self._up('recipients'))
 
 class RepChange(object):
 	pass
@@ -287,6 +287,7 @@ class Site(object):
 	
 	URL_Roots = {
 		User: 'users/%s',
+		Badge: 'badges/%s',
 		Answer: 'answers/%s',
 		Comment: 'comments/%s',
 		Question: 'questions/%s',
@@ -332,16 +333,22 @@ class Site(object):
 			kw['comments'] = str(self.include_comments)
 
 		json = self._request(url, kw)
-		page = json['page']
-		pagesize = json['pagesize']
-		items = []
+		
+		if 'page' in json:
+			# we have a paginated resultset
+			page = json['page']
+			pagesize = json['pagesize']
+			items = []
+	
+			# create strongly-typed objects from the JSON items
+			for json_item in json[collection]:
+				json_item['_params_'] = kw	# convenient access to the kw hash
+				items.append(typ(json_item, self))
 
-		# create strongly-typed objects from the JSON items
-		for json_item in json[collection]:
-			json_item['_params_'] = kw	# convenient access to the kw hash
-			items.append(typ(json_item, self))
-
-		return StackExchangeResultset(items, page, pagesize)
+			return StackExchangeResultset(items, page, pagesize)
+		else:
+			# this isn't a paginated resultset (unlikely, but possible - eg badges)
+			return tuple([typ(x, self) for x in json[collection]])
 	
 	def build_from_snippet(self, json, typ):
 		return StackExchangeResultSet([typ(x, self) for x in json])
@@ -385,3 +392,16 @@ class Site(object):
 	
 	def users_with_badge(self, bid, **kw):
 		return self.build('badges/' + str(bid), User, 'users', kw)
+	
+	def all_badges(self, **kw):
+		return self.build('badges', Badge, 'badges', kw)
+	
+	def badges(self, ids, **kw):
+		return self._get(Badge, ids, 'badges', kw)
+
+	def badge(self, nid, **kw):
+		b, = self.badges((nid,), kw)
+		return b
+	
+	def all_tag_badges(self, **kw):
+		return self.build('badges/tags', Badge, 'badges', kw)

@@ -17,5 +17,15 @@ print 'Downloading question #4...'
 question = site.question(4)
 print repr(question)
 
+## 3.) Find recent questions
+print 'Finding recent questions...'
+recent = site.recent_questions()
+print repr(recent)
+
+## 4.) Find all site badges
+print 'Finding site badges...'
+badges = site.all_badges()
+print repr(badges)
+
 ## f.) Print rate info
 print '-> Finished. (requests, total) = %s' % repr(site.rate_limit)
