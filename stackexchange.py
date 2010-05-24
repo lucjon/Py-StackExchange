@@ -15,27 +15,35 @@ class DictObject:
         self.__dict__.update(entries)
 
 class StackExchangeError(Exception):
+	"""A generic error thrown on a bad HTTP request during a StackExchange API request."""
 	def __init__(self, urlerror):
 		self.urlerror = urlerror
 	def __str__(self):
 		return 'Received HTTP error \'%d\'.' % self.urlerror.code
 
 class StackExchangeResultset(tuple):
+	"""Defines an immutable, paginated resultset. This class can be used as a tuple, but provides extended metadata as well, including methods
+to fetch the next page."""
+
 	def __new__(cls, items, page, pagesize, build_info):
 		cls.page, cls.pagesize, cls.build_info = page, pagesize, build_info
 		return tuple.__new__(cls, items)
 	
 	def reload(self):
+		"""Refreshes the data in the resultset with fresh API data. Note that this doesn't work with extended resultsets."""
 		# kind of a cheat, but oh well
 		return self.fetch_page(self.page)
 
 	def fetch_page(self, page):
+		"""Returns a new resultset containing data from the specified page of the results. It re-uses all parameters that were passed in
+to the initial function which created the resultset."""
 		new_params = list(self.build_info)
 		new_params[4] = new_params[4].copy()
 		new_params[4]['page'] = page
 		return new_params[0].build(*new_params[1:])
 	
 	def fetch_extended(self, page):
+		"""Returns a new resultset containing data from this resultset AND from the specified page."""
 		next = self.fetch_page(page)
 		extended = self + next
 
@@ -43,12 +51,16 @@ class StackExchangeResultset(tuple):
 		return StackExchangeResultset(extended, max(1, self.page - 1), self.pagesize + next.pagesize, self.build_info)
 
 	def fetch_next(self):
+		"""Returns the resultset of the data in the next page."""
 		return self.fetch_page(self.page + 1)
 	
 	def extend_next(self):
+		"""Returns a new resultset containing data from this resultset AND from the next page."""
 		return self.fetch_extended(self.page + 1)
 
 class Enumeration(object):
+	"""Provides a base class for enumeration classes. (Similar to 'enum' types in other languages.)"""
+
 	@classmethod
 	def from_string(cls, text, typ=None):
 		if typ is not None:
@@ -58,18 +70,26 @@ class Enumeration(object):
 
 ##### Lazy Collections ###
 class LazyTimeline(object):
+	"""Provides an interface to event timelines, such as the user reputation timeline."""
+
 	def __init__(self, user, url, fetched):
 		self.url = url
 		self.user = user
 		self.fetched = fetched
 
 class NeedsAwokenError(Exception):
+	"""An error raised when an attempt is made to access a property of a lazy collection that requires the data to have been fetched,
+but whose data has not yet been requested."""
+
 	def __init__(self, lazy):
 		self.lazy = lazy
 	def __str__(self):
 		return 'Could not return requested data; the sequence of "%s" has not been fetched.' % self.lazy.m_lazy
 
 class StackExchangeLazySequence(list):
+	"""Provides a sequence which *can* contain extra data available on an object. It is 'lazy' in the sense that data is only fetched when
+required - not on object creation."""
+
 	def __init__(self, m_type, count, site, url, fetch=None, collection=None):
 		self.m_type = m_type
 		self.count = count
@@ -88,6 +108,8 @@ class StackExchangeLazySequence(list):
 			raise NeedsAwokenError(self)
 	
 	def fetch(self):
+		"""Fetch, from the API, the data this sequence is meant to hold."""
+
 		res = self.site.build(self.url, self.m_type, self.collection)
 		if self.fetch_callback != None:
 			self.fetch_callback(res)
@@ -95,6 +117,8 @@ class StackExchangeLazySequence(list):
 
 ## JSONModel base class
 class JSONModel(object):
+	"""The base class of all the objects which describe API objects directly - ie, those which take JSON objects as parameters to their constructor."""
+
 	def __init__(self, json, site, skip_ext=False):
 		self.json_ob = DictObject(json)
 		self.site = site
@@ -106,6 +130,7 @@ class JSONModel(object):
 			self._extend(self.json_ob, site)
 
 	def fetch(self):
+		"""Fetches all the data that the model can describe, not just the attributes which were specified in the original response."""
 		if hasattr(self, 'fetch_callback'):
 			res = self.fetch_callback(self, self.site)
 
@@ -121,6 +146,8 @@ class JSONModel(object):
 	# Allows the easy creation of updateable, partial classes
 	@classmethod
 	def partial(cls, fetch_callback, site, populate):
+		"""Creates a partial description of the API object, with the proviso that the full set of data can be fetched later."""
+
 		model = cls({}, site, True)
 		
 		for k, v in populate.iteritems():
@@ -130,12 +157,17 @@ class JSONModel(object):
 
 	# for use with Lazy classes that need a callback to actually set the model property
 	def _up(self, a):
+		"""Returns a function which can be used with the LazySequence class to actually update the results properties on the model with the
+new fetched data."""
+
 		def inner(m):
 			setattr(self, a, m)
 		return inner
 
 ##### Content Types ###
 class Answer(JSONModel):
+	"""Describes an answer on a StackExchange site."""
+
 	transfer = ('accepted', 'locked_date', 'question_id', 'up_vote_count', 'down_vote_count', 'view_count', 'score',
 		'community_owned', 'title', 'body')
 
@@ -171,6 +203,8 @@ class Answer(JSONModel):
 		return str(unicode(self))
 
 class Question(JSONModel):
+	"""Describes a question on a StackExchange site."""
+
 	transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count', 'view_count', 'score', 'community_owned', 'title', 'body')
 
 	def _extend(self, json, site):
@@ -196,6 +230,8 @@ class Question(JSONModel):
 			self.owner = User.partial(lambda self: self.site.user(self.id), site, owner_dict)
 
 class Comment(JSONModel):
+	"""Describes a comment to a question or answer on a StackExchange site."""
+
 	transfer = ('post_id', 'score', 'edit_count', 'body')
 	def _extend(self, json, site):
 		self.id = json.comment_id
@@ -242,24 +278,37 @@ class Favorite(object):
 	pass
 
 class BadgeType(Enumeration):
+	"""Describes the rank or type of a badge: one of Bronze, Silver or Gold."""
+
 	Bronze, Silver, Gold = range(3)
 
 class Badge(JSONModel):
+	"""Describes a badge awardable on a StackExchange site."""
+
 	transfer = ('name', 'description', 'award_count', 'tag_based')
 	def _extend(self, json, site):
 		self.id = json.badge_id
 		self.recipients = StackExchangeLazySequence(User, None, site, json.badges_recipients_url, self._up('recipients'))
+	
+	def __str__(self):
+		return self.name
 
 class RepChange(object):
 	pass
 
 class PostType(Enumeration):
+	"""Denotes the type of a post: a question or an answer."""
+
 	Question, Answer = range(2)
 
 class UserType(Enumeration):
+	"""Denotes the status of a user on a site: whether it is Anonymous, Unregistered, Registered or a Moderator."""
+
 	Anonymous, Unregistered, Registered, Moderator = range(4)
 
 class User(JSONModel):
+	"""Describes a user on a StackExchange site."""
+
 	transfer = ('display_name', 'reputation', 'email_hash', 'age', 'website_url', 'location', 'about_me',
 		'view_count', 'up_vote_count', 'down_vote_count')
 	def _extend(self, json, site):
@@ -300,6 +349,9 @@ class User(JSONModel):
 
 
 class Site(object):
+	"""Stores information and provides methods to access data on a StackExchange site. This class is the 'root' of the API - all data is accessed
+through here."""
+
 	def __init__(self, domain, app_key=None):
 		self.domain = domain
 		self.app_key = app_key
@@ -346,10 +398,13 @@ class Site(object):
 			raise StackExchangeError(e)
 	
 	def be_inclusive(self):
+		"""Include the body and comments of a post, where appropriate, by default."""
+
 		self.include_body, self.include_comments = True, True
 
 	def build(self, url, typ, collection, kw={}):
 		"""Builds a StackExchangeResultset object from the given URL and type."""
+
 		if 'body' not in kw:
 			kw['body'] = str(self.include_body)
 		if 'comments' not in kw:
@@ -382,6 +437,7 @@ class Site(object):
 
 	def user(self, nid, **kw):
 		"""Retrieves an object representing the user with the ID `nid`."""
+
 		u, = self.users((nid,), **kw)
 		return u
 	
@@ -390,41 +446,55 @@ class Site(object):
 		return self._get(User, ids, 'users', kw)
 
 	def answer(self, nid, **kw):
+		"""Retrieves an object describing the answer with the ID `nid`."""
+
 		a, = self.answers((nid,), **kw)
 		return a
 	
 	def answers(self, ids, **kw):
+		"""Retrieves a set of the answers with the IDs specified in the 'ids' parameter."""
 		return self._get(Answer, ids, 'answers', kw)
 
 	def comment(self, nid, **kw):
+		"""Retrieves an object representing a comment with the ID `nid`."""
 		c, = self.comments((nid,), **kw)
 		return c
 	
 	def comments(self, ids, **kw):
+		"""Retrieves a set of the comments with the IDs specified in the 'ids' parameter."""
 		return self._get(Comment, ids, 'comments', kw)
 	
 	def question(self, nid, **kw):
+		"""Retrieves an object representing a question with the ID `nid`. Note that an answer ID can not be specified -
+unlike on the actual site, you will receive an error rather than a redirect to the actual question."""
 		q, = self.questions((nid,), **kw)
 		return q
 	
 	def questions(self, ids, **kw):
+		"""Retrieves a set of the comments with the IDs specified in the 'ids' parameter."""
 		return self._get(Question, ids, 'questions', kw)
 	
 	def recent_questions(self, **kw):
+		"""Returns the set of the most recent questions on the site, by last activity."""
 		return self.build('questions', Question, 'questions', kw)
 	
 	def users_with_badge(self, bid, **kw):
+		"""Returns the set of all the users who have been awarded the badge with the ID 'bid'."""
 		return self.build('badges/' + str(bid), User, 'users', kw)
 	
 	def all_badges(self, **kw):
+		"""Returns the set of all the badges which can be awarded on the site, excluding those which are awarded for specific tags."""
 		return self.build('badges', Badge, 'badges', kw)
 	
 	def badges(self, ids, **kw):
+		"""Returns information on the badges with the IDs specified in the 'ids' parameter."""
 		return self._get(Badge, ids, 'badges', kw)
 
 	def badge(self, nid, **kw):
+		"""Returns an object representing the badge with the ID 'nid'."""
 		b, = self.badges((nid,), kw)
 		return b
 	
 	def all_tag_badges(self, **kw):
+		"""Returns the set of all the tag-based badges: those which are awarded for performance on a specific tag."""
 		return self.build('badges/tags', Badge, 'badges', kw)
