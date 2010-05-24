@@ -21,9 +21,29 @@ class StackExchangeError(Exception):
 		return 'Received HTTP error \'%d\'.' % self.urlerror.code
 
 class StackExchangeResultset(tuple):
-	def __new__(cls, items, page, pagesize):
-		cls.page, cls.pagesize = page, pagesize
+	def __new__(cls, items, page, pagesize, build_info):
+		cls.page, cls.pagesize, cls.build_info = page, pagesize, build_info
 		return tuple.__new__(cls, items)
+	
+	def reload(self):
+		# kind of a cheat, but oh well
+		return self.fetch_page(self.page)
+
+	def fetch_page(self, page):
+		new_params = list(self.build_info)
+		new_params[4] = new_params[4].copy()
+		new_params[4]['page'] = page
+		return new_params[0].build(*new_params[1:])
+	
+	def fetch_extended(self, page):
+		next = self.fetch_page(page)
+		return self + next
+
+	def fetch_next(self):
+		return self.fetch_page(self.page + 1)
+	
+	def extend_next(self):
+		return self.fetch_extended(self.page + 1)
 
 class Enumeration(object):
 	@classmethod
@@ -345,7 +365,7 @@ class Site(object):
 				json_item['_params_'] = kw	# convenient access to the kw hash
 				items.append(typ(json_item, self))
 
-			return StackExchangeResultset(items, page, pagesize)
+			return StackExchangeResultset(items, page, pagesize, (self, url, typ, collection, kw))
 		else:
 			# this isn't a paginated resultset (unlikely, but possible - eg badges)
 			return tuple([typ(x, self) for x in json[collection]])
