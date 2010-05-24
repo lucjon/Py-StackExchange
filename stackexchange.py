@@ -11,7 +11,7 @@ MetaStackOverflow = 'api.meta.stackoverflow.com'
 #### Hack, because I can't be bothered to fix my mistaking JSON's output for an object not a dict
 # Attrib: Eli Bendersky, http://stackoverflow.com/questions/1305532/convert-python-dict-to-object/1305663#1305663
 class DictObject:
-    def __init__(self, **entries): 
+    def __init__(self, entries): 
         self.__dict__.update(entries)
 
 class StackExchangeError(Exception):
@@ -76,7 +76,7 @@ class StackExchangeLazySequence(list):
 ## JSONModel base class
 class JSONModel(object):
 	def __init__(self, json, site, skip_ext=False):
-		self.json_ob = DictObject(**json)
+		self.json_ob = DictObject(json)
 		self.site = site
 
 		for f in [x for x in self.transfer if hasattr(self.json_ob, x)]:
@@ -162,15 +162,18 @@ class Question(JSONModel):
 		self.comments = StackExchangeLazySequence(Comment, None, site, self.comments_url, self._up('comments'))
 
 		self.answers_url = json.question_answers_url
-		self.answers = [Answer(x, site) for x in json.answers]
+		if hasattr(json, 'answers'):
+			self.answers = [Answer(x, site) for x in json.answers]
 
-		self.owner_id = json.owner['user_id']
-		self.owner = User.partial(lambda self: self.site.user(self.id), site, {
-			'id': self.owner_id,
-			'user_type': UserType.from_string(json.owner['user_type']),
-			'display_name': json.owner['display_name'],
-			'reputation': json.owner['reputation'],
-			'email_hash': json.owner['email_hash']})
+		if hasattr(json, 'owner'):
+			self.owner_id = json.owner['user_id']
+	
+			owner_dict = json.owner
+			owner_dict['id'] = self.owner_id
+			del owner_dict['user_id']
+			owner_dict['user_type'] = UserType.from_string(owner_dict['user_type'])
+	
+			self.owner = User.partial(lambda self: self.site.user(self.id), site, owner_dict)
 
 class Comment(JSONModel):
 	transfer = ('post_id', 'score', 'edit_count', 'body')
@@ -302,10 +305,7 @@ class Site(object):
 			url += '%s=%s' % (k, str(v))
 
 		if self.app_key != None:
-			if not '?' in url:
-				url += '?key=appkey'
-			else:
-				url += '&key=appkey'
+			url += ('?' if not '?' in url else '&') + 'key=' + self.app_key
 
 		try:
 			conn = urllib2.urlopen(url)
@@ -379,3 +379,9 @@ class Site(object):
 	
 	def questions(self, ids, **kw):
 		return self._get(Question, ids, 'questions', kw)
+	
+	def recent_questions(self, **kw):
+		return self.build('questions', Question, 'questions', kw)
+	
+	def users_with_badge(self, bid, **kw):
+		return self.build('badges/' + str(bid), User, 'users', kw)
