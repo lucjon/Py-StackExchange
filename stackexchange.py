@@ -4,7 +4,6 @@ import urllib2, json, httplib, datetime, operator
 StackOverflow = 'api.stackoverflow.com'
 SuperUser = 'api.superuser.com'
 ServerFault = 'api.serverfault.com'
-### Broken for now ###
 StackApps = 'api.stackapps.com'
 MetaStackOverflow = 'api.meta.stackoverflow.com'
 
@@ -194,7 +193,7 @@ class Answer(JSONModel):
 
 		self.votes = (self.up_vote_count, self.down_vote_count)
 	
-	question = property(lambda self: self._question if self._question is not None else self.site.question(self.qustion_id))
+	question = property(lambda self: self._question if self._question is not None else self.site.question(self.question_id))
 	owner = property(lambda self: self._owner if self._owner is not None else self.site.user(self.owner_id))
 
 	def __unicode__(self):
