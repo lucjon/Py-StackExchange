@@ -1,4 +1,8 @@
-import urllib2, json, httplib, datetime, operator
+import urllib2, httplib, datetime, operator
+try:
+	import json
+except ImportError:
+	import simplejson as json
 
 # Site constants
 StackOverflow = 'api.stackoverflow.com'
