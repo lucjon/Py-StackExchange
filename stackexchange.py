@@ -67,18 +67,14 @@ class Enumeration(object):
 	@classmethod
 	def from_string(cls, text, typ=None):
 		if typ is not None:
-			return getattr(typ, text[0].upper() + text[1:])
+			if hasattr(typ, '_map') and text in typ._map:
+				return getattr(typ, typ._map[text])
+			elif hasattr(typ, text[0].upper() + text[1:]):
+				return getattr(typ, text[0].upper() + text[1:])
+			else:
+				return None
 		else:
 			return cls.from_string(text, cls)
-
-##### Lazy Collections ###
-class LazyTimeline(object):
-	"""Provides an interface to event timelines, such as the user reputation timeline."""
-
-	def __init__(self, user, url, fetched):
-		self.url = url
-		self.user = user
-		self.fetched = fetched
 
 class NeedsAwokenError(Exception):
 	"""An error raised when an attempt is made to access a property of a lazy collection that requires the data to have been fetched,
@@ -298,6 +294,20 @@ class RepChange(JSONModel):
 		self.on_date = datetime.date.fromtimestamp(json.on_date)
 		self.score = self.positive_rep - self.negative_rep
 
+## Timeline ##
+class TimelineEvent(JSONModel):
+	transfer = ('user_id', 'post_id', 'comment_id', 'action', 'description', 'detail')
+	def _extend(self, json, site):
+		self.timeline_type = TimelineEventType.from_string(json.timeline_type)
+		self.post_type = PostType.from_string(json.post_type)
+		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+	
+class TimelineEventType(Enumeration):
+	"""Denotes the type of a timeline event."""
+	_map = {'askoranswered': 'AskOrAnswered'}
+	Comment, AskOrAnswered, Badge, Revision, Accepted = range(5)
+##############
+
 class PostType(Enumeration):
 	"""Denotes the type of a post: a question or an answer."""
 
@@ -325,7 +335,7 @@ class User(JSONModel):
 		self.favorites = StackExchangeLazySequence(Question, None, site, json.user_favorites_url, self._up('favorites'), 'questions')
 		self.tags = StackExchangeLazySequence(Tag, None, site, json.user_tags_url, self._up('tags'))
 		self.badges = StackExchangeLazySequence(Badge, None, site, json.user_badges_url, self._up('badges'))
-		self.timeline = LazyTimeline(self, json.user_timeline_url, self._up('timeline'))
+		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.user_timeline_url, self._up('timeline'), 'user_timelines')
 		self.mentioned = StackExchangeLazySequence(Comment, None, site, json.user_mentioned_url, self._up('mentioned'), 'comments')
 		self.comments = StackExchangeLazySequence(Comment, None, site, json.user_comments_url, self._up('comments'))
 		self.reputation_detail = StackExchangeLazySequence(RepChange, None, site, json.user_reputation_url, self._up('reputation_detail'))
