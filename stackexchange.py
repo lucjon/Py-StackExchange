@@ -271,14 +271,8 @@ class Comment(JSONModel):
 
 
 ##### Users ####
-class Mention(object):
-	pass
-
-class Tag(object):
-	pass
-
-class Favorite(object):
-	pass
+class Tag(JSONModel):
+	transfer = ('name', 'count', 'user_id')
 
 class BadgeType(Enumeration):
 	"""Describes the rank or type of a badge: one of Bronze, Silver or Gold."""
@@ -296,8 +290,13 @@ class Badge(JSONModel):
 	def __str__(self):
 		return self.name
 
-class RepChange(object):
-	pass
+class RepChange(JSONModel):
+	"""Describes an event which causes a change in reputation."""
+
+	transfer = ('user_id', 'post_id', 'post_type', 'title', 'positive_rep', 'negative_rep')
+	def _extend(self, json, site):
+		self.on_date = datetime.date.fromtimestamp(json.on_date)
+		self.score = self.positive_rep - self.negative_rep
 
 class PostType(Enumeration):
 	"""Denotes the type of a post: a question or an answer."""
@@ -323,11 +322,11 @@ class User(JSONModel):
 		self.questions = StackExchangeLazySequence(Question, json.question_count, site, json.user_questions_url, self._up('questions'))
 		self.answers = StackExchangeLazySequence(Answer, json.answer_count, site, json.user_answers_url, self._up('answers'))
 # Grr, American spellings. Using them for consistency with official API.
-		self.favorites = StackExchangeLazySequence(Favorite, None, site, json.user_favorites_url, self._up('favorites'))
+		self.favorites = StackExchangeLazySequence(Question, None, site, json.user_favorites_url, self._up('favorites'), 'questions')
 		self.tags = StackExchangeLazySequence(Tag, None, site, json.user_tags_url, self._up('tags'))
 		self.badges = StackExchangeLazySequence(Badge, None, site, json.user_badges_url, self._up('badges'))
 		self.timeline = LazyTimeline(self, json.user_timeline_url, self._up('timeline'))
-		self.mentioned = StackExchangeLazySequence(Mention, None, site, json.user_mentioned_url, self._up('mentioned'))
+		self.mentioned = StackExchangeLazySequence(Comment, None, site, json.user_mentioned_url, self._up('mentioned'), 'comments')
 		self.comments = StackExchangeLazySequence(Comment, None, site, json.user_comments_url, self._up('comments'))
 		self.reputation_detail = StackExchangeLazySequence(RepChange, None, site, json.user_reputation_url, self._up('reputation_detail'))
 
@@ -501,3 +500,6 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 	def all_tag_badges(self, **kw):
 		"""Returns the set of all the tag-based badges: those which are awarded for performance on a specific tag."""
 		return self.build('badges/tags', Badge, 'badges', kw)
+	
+	def all_tags(self, **kw):
+		return self.build('tags', Tag, 'tags', kw)

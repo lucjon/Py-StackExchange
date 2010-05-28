@@ -142,13 +142,7 @@ Module stackexchange
 
 		get_post()			Returns the post (question or answer) which the question belongs to.
 
-	Class [Model] Mention:
-		[none]
-	
 	Class [Model] Tag:
-		[none]
-	
-	Class [Model] Favorite:
 		[none]
 	
 	Class BadgeType(Enumeration):
@@ -165,7 +159,14 @@ Module stackexchange
 		recipients			<User>		Is a LazySequence.
 	
 	Class [Model] RepChange:
-		[none]
+		user_id				Integer
+		post_id				Integer
+		post_type			Integer
+		title				String
+		positive_rep		Integer
+		negative_rep		Integer
+		score				Integer
+		on_date				datetime.date
 	
 	Class UserType(Enumeration):
 		Anonymous
@@ -190,11 +191,11 @@ Module stackexchange
 		last_access_date	datetime.date
 		questions			<Question>	Is a LazySequence.
 		answers				<Answer>	Is a LazySequence.
-		favorites			<Favorite>	Is a LazySequence.
+		favorites			<Question>	Is a LazySequence. Questions have no answers/body.
 		tags				<Tag>		Is a LazySequence.
 		badges				<Badge>		Is a LazySequence.
 		timeline			LazyTimeline
-		mentioned			<Mention>	Is a LazySequence.
+		mentioned			<Comment>	Is a LazySequence.
 		comments			<Comment>	Is a LazySequence.
 		reputation_detail	<RepChange>	Is a LazySequence.
 
