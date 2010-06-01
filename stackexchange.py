@@ -163,6 +163,14 @@ new fetched data."""
 			setattr(self, a, m)
 		return inner
 
+##### Statistics    ###
+class Statistics(JSONModel):
+	"""Stores statistics for a StackExchange site."""
+	transfer = ('total_questions', 'total_unanswered', 'total_answers', 'total_comments', 'total_votes', 'total_badges', 'total_users', 'questions_per_minute', 'answers_per_minutes', 'badges_per_minute', 'display_name')
+
+	def _extend(self, json, site):
+		self.api_version = DictObject(json.api_version)
+
 ##### Content Types ###
 class Answer(JSONModel):
 	"""Describes an answer on a StackExchange site."""
@@ -513,3 +521,6 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 	
 	def all_tags(self, **kw):
 		return self.build('tags', Tag, 'tags', kw)
+	
+	def stats(self, **kw):
+		return self.build('stats', Statistics, 'statistics', kw)[0]
