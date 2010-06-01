@@ -217,7 +217,7 @@ class Question(JSONModel):
 	def _extend(self, json, site):
 		self.id = json.question_id
 
-		self.timeline = LazyTimeline(self, json.question_timeline_url, self._up('timeline'))
+		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.question_timeline_url, self._up('timeline'))
 
 		self.comments_url = json.question_comments_url
 		self.comments = StackExchangeLazySequence(Comment, None, site, self.comments_url, self._up('comments'))
