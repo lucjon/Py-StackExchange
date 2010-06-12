@@ -492,10 +492,14 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 	
 	def questions(self, ids, **kw):
 		"""Retrieves a set of the comments with the IDs specified in the 'ids' parameter."""
+		if 'answers' not in kw:
+			kw['answers'] = 'true'
 		return self._get(Question, ids, 'questions', kw)
 	
 	def recent_questions(self, **kw):
 		"""Returns the set of the most recent questions on the site, by last activity."""
+		if 'answers' not in kw:
+			kw['answers'] = 'true'
 		return self.build('questions', Question, 'questions', kw)
 	
 	def users_with_badge(self, bid, **kw):
