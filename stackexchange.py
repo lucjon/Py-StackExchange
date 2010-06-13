@@ -376,6 +376,7 @@ through here."""
 		self.domain = domain
 		self.app_key = app_key
 		self.api_version = '0.8'
+		self.use_gzip = True
 
 		self.include_body = False
 		self.include_comments = False
@@ -410,15 +411,20 @@ through here."""
 			conn = req_open.open(request)
 
 			req_data = conn.read()
-			data_stream = StringIO.StringIO(req_data)
-			gzip_stream = gzip.GzipFile(fileobj=data_stream)
-			actual_data = gzip_stream.read()
+
+			if self.use_gzip:
+				data_stream = StringIO.StringIO(req_data)
+				gzip_stream = gzip.GzipFile(fileobj=data_stream)
+				actual_data = gzip_stream.read()
+			else:
+				actual_data = req_data
 
 			dump = json.loads(actual_data)
 
 			info = conn.info()
 			self.rate_limit = (int(info.getheader('X-RateLimit-Current')), int(info.getheader('X-RateLimit-Max')))
-			self.requests_left = self.rate_limit[1] - self.rate_limit[0]
+			self.requests_used = self.rate_limit[1] - self.rate_limit[0]
+			self.requests_left = self.rate_limit[0]
 
 			conn.close()
 
