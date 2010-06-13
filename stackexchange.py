@@ -1,4 +1,4 @@
-import urllib2, httplib, datetime, operator
+import urllib2, httplib, datetime, operator, StringIO, gzip
 try:
 	import json
 except ImportError:
@@ -404,8 +404,17 @@ through here."""
 			url += ('?' if not '?' in url else '&') + 'key=' + self.app_key
 
 		try:
-			conn = urllib2.urlopen(url)
-			dump = json.load(conn)
+			request = urllib2.Request(url)
+			request.add_header('Accept-encoding', 'gzip')
+			req_open = urllib2.build_opener()
+			conn = req_open.open(request)
+
+			req_data = conn.read()
+			data_stream = StringIO.StringIO(req_data)
+			gzip_stream = gzip.GzipFile(fileobj=data_stream)
+			actual_data = gzip_stream.read()
+
+			dump = json.loads(actual_data)
 
 			info = conn.info()
 			self.rate_limit = (int(info.getheader('X-RateLimit-Current')), int(info.getheader('X-RateLimit-Max')))
