@@ -385,9 +385,8 @@ through here."""
 
 		self.include_body = False
 		self.include_comments = False
+		self.root_domain = '.'.join(self.domain.split('.')[1:])
 
-	root_domain = property(lambda self: self.domain.split('.')[1:])
-	
 	URL_Roots = {
 		User: 'users/%s',
 		Badge: 'badges/%s',
