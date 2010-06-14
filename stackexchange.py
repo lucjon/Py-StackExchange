@@ -387,6 +387,8 @@ through here."""
 		self.include_comments = False
 		self.root_domain = '.'.join(self.domain.split('.')[1:])
 
+	URL_Roots = {
+		User: 'users/%s',
 		Badge: 'badges/%s',
 		Answer: 'answers/%s',
 		Comment: 'comments/%s',
