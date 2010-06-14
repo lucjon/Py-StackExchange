@@ -200,6 +200,7 @@ class Answer(JSONModel):
 			self.last_activity_date = datetime.date.fromtimestamp(json.last_activity_date)
 
 		self.votes = (self.up_vote_count, self.down_vote_count)
+		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.question_id) + '/' + str(self.id) + '#' + str(self.id)
 	
 	question = property(lambda self: self._question if self._question is not None else self.site.question(self.question_id))
 	owner = property(lambda self: self._owner if self._owner is not None else self.site.user(self.owner_id))
@@ -235,6 +236,8 @@ class Question(JSONModel):
 			owner_dict['user_type'] = UserType.from_string(owner_dict['user_type'])
 	
 			self.owner = User.partial(lambda self: self.site.user(self.id), site, owner_dict)
+
+		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.id)
 
 class Comment(JSONModel):
 	"""Describes a comment to a question or answer on a StackExchange site."""
@@ -361,6 +364,8 @@ class User(JSONModel):
 		}
 		self.gold_badges, self.silver_badges, self.bronze_badges = self.badge_counts_t
 		self.badge_total = reduce(operator.add, self.badge_counts_t)
+		
+		self.url = 'http://' + self.site.root_domain + '/users/' + self.id
 	
 	def __unicode__(self):
 		return 'User %d [%s]' % (self.id, self.display_name)
@@ -380,6 +385,8 @@ through here."""
 
 		self.include_body = False
 		self.include_comments = False
+
+	root_domain = property(lambda self: self.domain.split('.')[1:])
 	
 	URL_Roots = {
 		User: 'users/%s',
