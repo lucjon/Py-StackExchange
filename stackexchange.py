@@ -365,7 +365,7 @@ class User(JSONModel):
 		self.gold_badges, self.silver_badges, self.bronze_badges = self.badge_counts_t
 		self.badge_total = reduce(operator.add, self.badge_counts_t)
 		
-		self.url = 'http://' + self.site.root_domain + '/users/' + self.id
+		self.url = 'http://' + self.site.root_domain + '/users/' + str(self.id)
 	
 	def __unicode__(self):
 		return 'User %d [%s]' % (self.id, self.display_name)
@@ -387,8 +387,6 @@ through here."""
 		self.include_comments = False
 		self.root_domain = '.'.join(self.domain.split('.')[1:])
 
-	URL_Roots = {
-		User: 'users/%s',
 		Badge: 'badges/%s',
 		Answer: 'answers/%s',
 		Comment: 'comments/%s',
