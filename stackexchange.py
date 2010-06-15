@@ -202,8 +202,13 @@ class Answer(JSONModel):
 		self.votes = (self.up_vote_count, self.down_vote_count)
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.question_id) + '/' + str(self.id) + '#' + str(self.id)
 	
-	question = property(lambda self: self._question if self._question is not None else self.site.question(self.question_id))
-	owner = property(lambda self: self._owner if self._owner is not None else self.site.user(self.owner_id))
+	question = property(lambda self: self._question if self._question is not None else self._get_quest(self.question_id), lambda self, v: self._question = v)
+	owner = property(lambda self: self._owner if self._owner is not None else _get_user(self.owner_id), lambda self, v: self._owner = v)
+
+	def _get_user(s,id):
+		s._owner = self.site.user(id)
+	def _get_quest(s,id):
+		s._question = self.site.question(id)
 
 	def __unicode__(self):
 		return u'Answer %d [%s]' % (self.id, self.title)
@@ -395,6 +400,16 @@ through here."""
 		Question: 'questions/%s',
 	}
 	
+	def _kw_to_str(self, ob):
+		try:
+			if not isinstance(ob, str):
+				i = iter(ob)
+				return ';'.join(i)
+			else:
+				return ob
+		except TypeError:
+			return str(ob).lower()
+
 	def _request(self, to, params):
 		url = 'http://' + self.domain + '/' + self.api_version + '/' + to
 
@@ -405,7 +420,7 @@ through here."""
 				done = True
 			else: url += '&'
 
-			url += '%s=%s' % (k, str(v))
+			url += '%s=%s' % (k, self._kw_to_str(v))
 
 		if self.app_key != None:
 			url += ('?' if not '?' in url else '&') + 'key=' + self.app_key
@@ -447,9 +462,9 @@ through here."""
 		"""Builds a StackExchangeResultset object from the given URL and type."""
 
 		if 'body' not in kw:
-			kw['body'] = str(self.include_body)
+			kw['body'] = str(self.include_body).lower()
 		if 'comments' not in kw:
-			kw['comments'] = str(self.include_comments)
+			kw['comments'] = str(self.include_comments).lower()
 
 		json = self._request(url, kw)
 		
@@ -492,9 +507,19 @@ through here."""
 		a, = self.answers((nid,), **kw)
 		return a
 	
-	def answers(self, ids, **kw):
-		"""Retrieves a set of the answers with the IDs specified in the 'ids' parameter."""
-		return self._get(Answer, ids, 'answers', kw)
+	def answers(self, ids=None, **kw):
+		"""Retrieves a set of the answers with the IDs specified in the 'ids' parameter, or by the
+		user_id specified."""
+		if ids == None:
+			if 'user_id' not in kw:
+				raise LookupError('No answer IDs supplied, but user ID has not been provided.')
+			else:
+				uid = kw['user_id']
+				del kw['user_id']
+
+				return self.build('users/%d/answers' % uid, Answer, 'answers', kw)
+		else:
+			return self._get(Answer, ids, 'answers', kw)
 
 	def comment(self, nid, **kw):
 		"""Retrieves an object representing a comment with the ID `nid`."""
