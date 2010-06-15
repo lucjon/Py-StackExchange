@@ -37,11 +37,12 @@ to fetch the next page."""
 		# kind of a cheat, but oh well
 		return self.fetch_page(self.page)
 
-	def fetch_page(self, page):
+	def fetch_page(self, page, **kw):
 		"""Returns a new resultset containing data from the specified page of the results. It re-uses all parameters that were passed in
 to the initial function which created the resultset."""
 		new_params = list(self.build_info)
 		new_params[4] = new_params[4].copy()
+		new_params[4].update(kw)
 		new_params[4]['page'] = page
 		return new_params[0].build(*new_params[1:])
 	
@@ -106,10 +107,10 @@ required - not on object creation."""
 		else:
 			raise NeedsAwokenError(self)
 	
-	def fetch(self):
+	def fetch(self, **kw):
 		"""Fetch, from the API, the data this sequence is meant to hold."""
 
-		res = self.site.build(self.url, self.m_type, self.collection)
+		res = self.site.build(self.url, self.m_type, self.collection, kw)
 		if self.fetch_callback != None:
 			self.fetch_callback(res)
 		return res
@@ -202,13 +203,19 @@ class Answer(JSONModel):
 		self.votes = (self.up_vote_count, self.down_vote_count)
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.question_id) + '/' + str(self.id) + '#' + str(self.id)
 	
-	question = property(lambda self: self._question if self._question is not None else self._get_quest(self.question_id), lambda self, v: self._question = v)
-	owner = property(lambda self: self._owner if self._owner is not None else _get_user(self.owner_id), lambda self, v: self._owner = v)
-
 	def _get_user(s,id):
 		s._owner = self.site.user(id)
+		return s._owner
+	def _set_user(s,ob):
+		s._owner = pb
 	def _get_quest(s,id):
 		s._question = self.site.question(id)
+		return s._question
+	def _set_quest(s,ob):
+		s._question = ob
+	
+	question = property(lambda self: self._question if self._question is not None else self._get_quest(self.question_id), _set_quest)
+	owner = property(lambda self: self._owner if self._owner is not None else self._get_user(self.owner_id), _set_user)
 
 	def __unicode__(self):
 		return u'Answer %d [%s]' % (self.id, self.title)
@@ -453,6 +460,15 @@ through here."""
 		except urllib2.URLError, e:
 			raise StackExchangeError(e)
 	
+	def _user_prop(self, qs, typ, coll, kw, prop='user_id'):
+		if prop not in kw:
+			raise LookupError('No user ID provided.')
+		else:
+			tid = kw[prop]
+			del kw[prop]
+
+			return self.build('users/%d/%s' % (tid, qs), typ, coll, kw)
+
 	def be_inclusive(self):
 		"""Include the body and comments of a post, where appropriate, by default."""
 
@@ -511,13 +527,7 @@ through here."""
 		"""Retrieves a set of the answers with the IDs specified in the 'ids' parameter, or by the
 		user_id specified."""
 		if ids == None:
-			if 'user_id' not in kw:
-				raise LookupError('No answer IDs supplied, but user ID has not been provided.')
-			else:
-				uid = kw['user_id']
-				del kw['user_id']
-
-				return self.build('users/%d/answers' % uid, Answer, 'answers', kw)
+			return self._user_prop('answers', Answer, 'answers', kw)
 		else:
 			return self._get(Answer, ids, 'answers', kw)
 
@@ -526,9 +536,12 @@ through here."""
 		c, = self.comments((nid,), **kw)
 		return c
 	
-	def comments(self, ids, **kw):
+	def comments(self, ids=None, **kw):
 		"""Retrieves a set of the comments with the IDs specified in the 'ids' parameter."""
-		return self._get(Comment, ids, 'comments', kw)
+		if ids == None:
+			return self._user_prop('comments', Comment, 'comments', kw)
+		else:
+			return self._get(Comment, ids, 'comments', kw)
 	
 	def question(self, nid, **kw):
 		"""Retrieves an object representing a question with the ID `nid`. Note that an answer ID can not be specified -
@@ -536,11 +549,14 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		q, = self.questions((nid,), **kw)
 		return q
 	
-	def questions(self, ids, **kw):
+	def questions(self, ids=None, **kw):
 		"""Retrieves a set of the comments with the IDs specified in the 'ids' parameter."""
 		if 'answers' not in kw:
 			kw['answers'] = 'true'
-		return self._get(Question, ids, 'questions', kw)
+		if ids == None:
+			return self._user_prop('questions', Question, 'questions', kw)
+		else:
+			return self._get(Question, ids, 'questions', kw)
 	
 	def recent_questions(self, **kw):
 		"""Returns the set of the most recent questions on the site, by last activity."""
@@ -556,9 +572,12 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		"""Returns the set of all the badges which can be awarded on the site, excluding those which are awarded for specific tags."""
 		return self.build('badges', Badge, 'badges', kw)
 	
-	def badges(self, ids, **kw):
-		"""Returns information on the badges with the IDs specified in the 'ids' parameter."""
-		return self._get(Badge, ids, 'badges', kw)
+	def badges(self, ids=None, **kw):
+		"""Returns the users with the badges with IDs."""
+		if ids == None:
+			return self._user_prop('badges', Badge, 'users', kw)
+		else:
+			return self._get(Badge, ids, 'users', kw)
 
 	def badge(self, nid, **kw):
 		"""Returns an object representing the badge with the ID 'nid'."""
