@@ -434,7 +434,9 @@ through here."""
 
 		try:
 			request = urllib2.Request(url)
-			request.add_header('Accept-encoding', 'gzip')
+			
+			if self.use_gzip:
+				request.add_header('Accept-encoding', 'gzip')
 			req_open = urllib2.build_opener()
 			conn = req_open.open(request)
 
