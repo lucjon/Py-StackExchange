@@ -204,12 +204,12 @@ class Answer(JSONModel):
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.question_id) + '/' + str(self.id) + '#' + str(self.id)
 	
 	def _get_user(s,id):
-		s._owner = self.site.user(id)
+		s._owner = s.site.user(id)
 		return s._owner
 	def _set_user(s,ob):
 		s._owner = pb
 	def _get_quest(s,id):
-		s._question = self.site.question(id)
+		s._question = s.site.question(id)
 		return s._question
 	def _set_quest(s,ob):
 		s._question = ob
