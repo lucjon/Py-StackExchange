@@ -271,7 +271,7 @@ through here."""
 		if self.app_key != None:
 			new_params['app_key'] = self.app_key
 
-		request_mgr = WebRequestManager()
+		request_mgr = WebRequestManager(gzip=self.use_gzip)
 		json, info = request_mgr.json_request(url, new_params)
 		
 		self.rate_limit = (int(info.getheader('X-RateLimit-Current')), int(info.getheader('X-RateLimit-Max')))
@@ -303,23 +303,8 @@ through here."""
 			kw['comments'] = str(self.include_comments).lower()
 
 		json = self._request(url, kw)
+		return JSONMangler.json_to_resultset(self, json, typ, collection, (self, url, typ, collection, kw))
 		
-		if 'page' in json:
-			# we have a paginated resultset
-			page = json['page']
-			pagesize = json['pagesize']
-			items = []
-	
-			# create strongly-typed objects from the JSON items
-			for json_item in json[collection]:
-				json_item['_params_'] = kw	# convenient access to the kw hash
-				items.append(typ(json_item, self))
-
-			return StackExchangeResultset(items, page, pagesize, (self, url, typ, collection, kw))
-		else:
-			# this isn't a paginated resultset (unlikely, but possible - eg badges)
-			return tuple([typ(x, self) for x in json[collection]])
-	
 	def build_from_snippet(self, json, typ):
 		return StackExchangeResultSet([typ(x, self) for x in json])
 	

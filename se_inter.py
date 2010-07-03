@@ -1,7 +1,8 @@
+#!/usr/bin/python -i
 # Saves me quite a bit of typing during interactive
 # testing sessions.
-# Use: from se_inter import *
+# Just execute.
 
-import stackexchange
-so = stackexchange.Site(stackexchange.StackOverflow, '1_9Gj-egW0q_k1JaweDG8Q')
-
+from stackexchange import *
+from stackauth import *
+so = Site(StackOverflow, '1_9Gj-egW0q_k1JaweDG8Q')

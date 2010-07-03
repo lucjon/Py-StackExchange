@@ -156,4 +156,33 @@ class DictObject:
     def __init__(self, entries): 
         self.__dict__.update(entries)
 
+class JSONMangler(object):
+	"""This class handles all sorts of random JSON-handling stuff"""
+
+	@staticmethod
+	def paginated_to_resultset(site, json, typ, collection, params):
+		page = json['page']
+		pagesize = json['pagesize']
+		items = []
+
+		# create strongly-typed objects from the JSON items
+		for json_item in json[collection]:
+			json_item['_params_'] = params[-1] # convenient access to the kw hash
+			items.append(typ(json_item, site))
+
+		return StackExchangeResultset(items, page, pagesize, params)
+	
+	@staticmethod
+	def normal_to_resultset(site, json, typ, collection):
+		return tuple([typ(x, site) for x in json[collection]])
+	
+	@classmethod
+	def json_to_resultset(cls, site, json, typ, collection, params=None):
+		if 'page' in json:
+			# we have a paginated resultset
+			return cls.paginated_to_resultset(site, json, typ, collection, params)
+		else:
+			# this isn't paginated (unlikely but possible - eg badges)
+			return cls.normal_to_resultset(site, json, typ, collection)
+
 
