@@ -2,6 +2,7 @@
 
 from stackweb import WebRequestManager
 from stackcore import *
+from stackexchange import Site, User, UserType
 import re
 
 class SiteState(Enumeration):
@@ -19,7 +20,22 @@ class SiteDefinition(JSONModel):
 
 		self.state = SiteState.from_string(fixed_state)
 		self.styling = DictObject(json.styling)
-		
+	
+	def get_site(self, **kw):
+		# A bit hackish; strips of the "http://"
+		domain = site.api_endpoint[7:]
+		return Site(domain, **kw)
+
+class UserAssociation(JSONModel):
+	transfer = ('display_name', 'reputation', 'email_hash')
+	
+	def _extend(self, json, stackauth):
+		self.id = json.user_id
+		self.user_type = UserType.from_string(json.user_type)
+		self.on_site = SiteDefinition(json.on_site, stackauth)
+	
+	def get_user(self):
+		return self.on_site.get_site().user(self.id)
 
 class StackAuth(object):
 	def __init__(self, **kw):
@@ -42,5 +58,16 @@ class StackAuth(object):
 		return JSONMangler.json_to_resultset(self, json, typ, collection, (self, url, typ, collection, kw))
 	
 	def sites(self):
+		"""Returns information about all the StackExchanges ites currently lited on StackAuth.com"""
 		return self.build(self.url('sites'), SiteDefinition, 'api_sites')
+	
+	def associated_from_assoc(self, assoc_id):
+		"""Returns, given a user's *association ID*, all their accounts on other StackExchange sites."""
+		return self.build(self.url('users/%s/associated' % assoc_id), UserAssociation, 'associated_users')
+	
+	def associated(self, site, user_id):
+		"""Returns, given a target site object and a user ID for that site, their associated accounts on other StackExchange sites."""
+		user = site.user(user_id)
+		assoc = user.association_id
+		return self.associated_from_assoc(assoc)
 	

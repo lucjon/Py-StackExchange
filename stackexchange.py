@@ -190,7 +190,7 @@ class User(JSONModel):
 	"""Describes a user on a StackExchange site."""
 
 	transfer = ('display_name', 'reputation', 'email_hash', 'age', 'website_url', 'location', 'about_me',
-		'view_count', 'up_vote_count', 'down_vote_count')
+		'view_count', 'up_vote_count', 'down_vote_count', 'association_id')
 	def _extend(self, json, site):
 		self.id = json.user_id
 		self.user_type = Enumeration.from_string(json.user_type, UserType)
