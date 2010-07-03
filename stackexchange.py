@@ -1,8 +1,5 @@
-import urllib2, httplib, datetime, operator, StringIO, gzip
-try:
-	import json
-except ImportError:
-	import simplejson as json
+import datetime, operator
+from stackweb import WebRequestManager
 
 # Site constants
 StackOverflow = 'api.stackoverflow.com'
@@ -420,47 +417,20 @@ through here."""
 	def _request(self, to, params):
 		url = 'http://' + self.domain + '/' + self.api_version + '/' + to
 
-		done = False
+		new_params = {}
 		for k, v in params.iteritems():
-			if not done:
-				url += '?'
-				done = True
-			else: url += '&'
-
-			url += '%s=%s' % (k, self._kw_to_str(v))
-
+			new_params[k] = self._kw_to_str(v)
 		if self.app_key != None:
-			url += ('?' if not '?' in url else '&') + 'key=' + self.app_key
+			new_params['app_key'] = self.app_key
 
-		try:
-			request = urllib2.Request(url)
-			
-			if self.use_gzip:
-				request.add_header('Accept-encoding', 'gzip')
-			req_open = urllib2.build_opener()
-			conn = req_open.open(request)
+		request_mgr = WebRequestManager()
+		json, info = request_mgr.json_request(url, new_params)
+		
+		self.rate_limit = (int(info.getheader('X-RateLimit-Current')), int(info.getheader('X-RateLimit-Max')))
+		self.requests_used = self.rate_limit[1] - self.rate_limit[0]
+		self.requests_left = self.rate_limit[0]
 
-			req_data = conn.read()
-
-			if self.use_gzip:
-				data_stream = StringIO.StringIO(req_data)
-				gzip_stream = gzip.GzipFile(fileobj=data_stream)
-				actual_data = gzip_stream.read()
-			else:
-				actual_data = req_data
-
-			dump = json.loads(actual_data)
-
-			info = conn.info()
-			self.rate_limit = (int(info.getheader('X-RateLimit-Current')), int(info.getheader('X-RateLimit-Max')))
-			self.requests_used = self.rate_limit[1] - self.rate_limit[0]
-			self.requests_left = self.rate_limit[0]
-
-			conn.close()
-
-			return dump
-		except urllib2.URLError, e:
-			raise StackExchangeError(e)
+		return json
 	
 	def _user_prop(self, qs, typ, coll, kw, prop='user_id'):
 		if prop not in kw:
