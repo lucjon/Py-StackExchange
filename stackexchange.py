@@ -237,7 +237,7 @@ through here."""
 	def __init__(self, domain, app_key=None):
 		self.domain = domain
 		self.app_key = app_key
-		self.api_version = '0.9'
+		self.api_version = '1.0'
 		self.use_gzip = True
 
 		self.include_body = False
