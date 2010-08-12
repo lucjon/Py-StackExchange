@@ -2,6 +2,9 @@
 # This file is safe to "import *" - it doesn't even
 # import anything itself.
 
+from datetime import datetime
+from math import floor
+
 ## JSONModel base class
 class JSONModel(object):
 	"""The base class of all the objects which describe API objects directly - ie, those which take JSON objects as parameters to their constructor."""
@@ -185,4 +188,25 @@ class JSONMangler(object):
 			# this isn't paginated (unlikely but possible - eg badges)
 			return cls.normal_to_resultset(site, json, typ, collection)
 
+def format_relative_date(date):
+	"""Takes a datetime object and returns the date formatted as a string e.g. "3 minutes ago", like the real site.
+	This is based roughly on George Edison's code from StackApps:
+	http://stackapps.com/questions/1009/how-to-format-time-since-xxx-e-g-4-minutes-ago-similar-to-stack-exchange-site/1018#1018"""
 
+	now = datetime.now()
+	diff = (now - date).seconds
+
+	# Anti-repitition! These simplify the code somewhat.
+	plural = lambda d: 's' if d != 1 else ''
+	frmt   = lambda d: (diff / float(d), plural(diff / float(d)))
+
+	if diff < 60:
+		return '%d second%s ago' % frmt(1)
+	elif diff < 3600:
+		return '%d minute%s ago' % frmt(60)
+	elif diff < 86400:
+		return '%d hour%s ago' % frmt(3600)
+	elif diff < 172800:
+		return 'yesterday'
+	else:
+		return date.strftime('M j / y - H:i')
