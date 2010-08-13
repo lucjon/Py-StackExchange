@@ -2,7 +2,7 @@
 # This file is safe to "import *" - it doesn't even
 # import anything itself.
 
-from datetime import datetime
+import datetime
 from math import floor
 
 ## JSONModel base class
@@ -193,7 +193,7 @@ def format_relative_date(date):
 	This is based roughly on George Edison's code from StackApps:
 	http://stackapps.com/questions/1009/how-to-format-time-since-xxx-e-g-4-minutes-ago-similar-to-stack-exchange-site/1018#1018"""
 
-	now = datetime.now()
+	now = datetime.datetime.now()
 	diff = (now - date).seconds
 
 	# Anti-repitition! These simplify the code somewhat.

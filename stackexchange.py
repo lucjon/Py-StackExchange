@@ -238,7 +238,10 @@ through here."""
 		self.domain = domain
 		self.app_key = app_key
 		self.api_version = '1.0'
+
 		self.use_gzip = True
+		self.impose_throttling = False
+		self.throttle_stop = True
 
 		self.include_body = False
 		self.include_comments = False
@@ -271,7 +274,9 @@ through here."""
 		if self.app_key != None:
 			new_params['app_key'] = self.app_key
 
-		request_mgr = WebRequestManager(gzip=self.use_gzip)
+		request_properties = dict([(x, getattr(self, x)) for x in ('use_gzip', 'impose_throttling', 'throttle_stop')])
+		request_mgr = WebRequestManager(**request_properties)
+
 		json, info = request_mgr.json_request(url, new_params)
 		
 		self.rate_limit = (int(info.getheader('X-RateLimit-Current')), int(info.getheader('X-RateLimit-Max')))
