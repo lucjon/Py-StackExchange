@@ -83,6 +83,8 @@ class Question(JSONModel):
 		self.answers_url = json.question_answers_url
 		if hasattr(json, 'answers'):
 			self.answers = [Answer(x, site) for x in json.answers]
+		else:
+			self.answers = []
 
 		if hasattr(json, 'owner'):
 			self.owner_id = json.owner['user_id']
