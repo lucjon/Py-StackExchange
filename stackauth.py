@@ -22,8 +22,8 @@ class SiteDefinition(JSONModel):
 		self.styling = DictObject(json.styling)
 	
 	def get_site(self, **kw):
-		# A bit hackish; strips of the "http://"
-		domain = site.api_endpoint[7:]
+		# A bit hackish; strips off the "http://"
+		domain = self.api_endpoint[7:]
 		return Site(domain, **kw)
 
 class UserAssociation(JSONModel):
