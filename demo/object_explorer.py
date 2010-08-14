@@ -105,10 +105,13 @@ def explore(ob, nm, pname=None):
 				# we ask the user for each parameter in turn. we offset by one for self, after using reflection to find the parameter names.
 				args = [input(rval.func_code.co_varnames[i + 1] + ': ') for i in range(rval.func_code.co_argcount - 1)]
 
-				extra_code = '('
-				for arg in args:
-					extra_code += repr(arg) + ', '
-				extra_code = '%s)' % extra_code[:-2]
+				if len(args) > 0:
+					extra_code = '('
+					for arg in args:
+						extra_code += repr(arg) + ', '
+					extra_code = '%s)' % extra_code[:-2]
+				else:
+					extra_code = '()'
 				
 				rval = rval(*args)
 
