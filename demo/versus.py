@@ -26,11 +26,12 @@ for site in stackauth.StackAuth().associated(so, user2):
 
 for site in sites:
 	total_rep1 += rep1[site]
-	total_rep2 += rep2[site]
+	if site in rep2:
+		total_rep2 += rep2[site]
 
 	max_user = username1
-	max_rep, other_rep = rep1[site], rep2[site]
-	if rep2[site] > rep1[site]:
+	max_rep, other_rep = rep1[site], rep2.get(site, 0)
+	if rep2.get(site, 0) > rep1[site]:
 		max_user = username2
 		max_rep, other_rep = other_rep, max_rep
 	
