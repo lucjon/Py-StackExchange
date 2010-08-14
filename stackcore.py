@@ -43,6 +43,7 @@ class JSONModel(object):
 			setattr(model, k, v)
 
 		model.fetch_callback = fetch_callback
+		return model
 
 	# for use with Lazy classes that need a callback to actually set the model property
 	def _up(self, a):
