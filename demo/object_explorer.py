@@ -51,7 +51,7 @@ def explore(ob, nm, pname=None):
 	global code_so_far
 
 	# sometimes, we have to use a different name for variables
-	vname = nm if pname is None else nm
+	vname = nm if pname is None else pname
 
 	is_dict = isinstance(ob, dict)
 	is_list = isinstance(ob, list) or isinstance(ob, tuple) or is_dict
@@ -130,12 +130,12 @@ def explore(ob, nm, pname=None):
 				code = '%s = %s.%s%s' % (inp, vname, inp, extra_code)
 				code_so_far.append(code)
 
-				explore(rval, inp, vname)
+				explore(rval, inp)
 		else:
 			print 'Invalid response.'
 
+code_so_far.append('import stackexchange')
 while True:
 	site, site_def = choose_site()
-	code_so_far.append('import stackexchange')
 	code_so_far.append('site = stackexchange.Site("' + site_def.api_endpoint[7:] + '")')
 	explore(site, site_def.name, 'site')
