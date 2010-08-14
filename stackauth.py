@@ -68,6 +68,9 @@ class StackAuth(object):
 	def associated(self, site, user_id):
 		"""Returns, given a target site object and a user ID for that site, their associated accounts on other StackExchange sites."""
 		user = site.user(user_id)
-		assoc = user.association_id
-		return self.associated_from_assoc(assoc)
+		if hasattr(user, 'association_id'):
+			assoc = user.association_id
+			return self.associated_from_assoc(assoc)
+		else:
+			return []
 	
