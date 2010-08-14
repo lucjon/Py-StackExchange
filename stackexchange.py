@@ -189,7 +189,6 @@ class UserType(Enumeration):
 	Anonymous, Unregistered, Registered, Moderator = range(4)
 
 class FormattedReputation(int):
-	# This should work as an instance and a static method, comme FormattedReputation.format(10) or FormattedReputation(10).format()
 	def format(rep):
 		"""Formats the reputation score like it is formatted on the sites. Heavily based on CMS' JavaScript implementation at
 		http://stackapps.com/questions/1012/how-to-format-reputation-numbers-similar-to-stack-exchange-sites/1019#1019"""
