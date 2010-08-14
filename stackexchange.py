@@ -186,20 +186,38 @@ class UserType(Enumeration):
 
 	Anonymous, Unregistered, Registered, Moderator = range(4)
 
+class FormattedReputation(int):
+	# This should work as an instance and a static method, comme FormattedReputation.format(10) or FormattedReputation(10).format()
+	def format(rep):
+		"""Formats the reputation score like it is formatted on the sites. Heavily based on CMS' JavaScript implementation at
+		http://stackapps.com/questions/1012/how-to-format-reputation-numbers-similar-to-stack-exchange-sites/1019#1019"""
+		str_rep = str(rep)
+
+		if rep < 1000:
+			return str_rep
+		elif rep < 10000:
+			return '%s,%s' % (str_rep[0], str_rep[1:])
+		elif rep % 1000 == 0:
+			return '%dk' % (rep / 1000.0)
+		else:
+			return '%.1fk' % (rep / 1000.0)
+
+
 class User(JSONModel):
 	"""Describes a user on a StackExchange site."""
 
-	transfer = ('display_name', 'reputation', 'email_hash', 'age', 'website_url', 'location', 'about_me',
+	transfer = ('display_name', 'email_hash', 'age', 'website_url', 'location', 'about_me',
 		'view_count', 'up_vote_count', 'down_vote_count', 'association_id')
 	def _extend(self, json, site):
 		self.id = json.user_id
 		self.user_type = Enumeration.from_string(json.user_type, UserType)
 		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
 		self.last_access_date = datetime.date.fromtimestamp(json.last_access_date)
+		self.reputation = FormattedReputation(json.reputation)
 
 		self.questions = StackExchangeLazySequence(Question, json.question_count, site, json.user_questions_url, self._up('questions'))
 		self.answers = StackExchangeLazySequence(Answer, json.answer_count, site, json.user_answers_url, self._up('answers'))
-# Grr, American spellings. Using them for consistency with official API.
+		# Grr, American spellings. Using them for consistency with official API.
 		self.favorites = StackExchangeLazySequence(Question, None, site, json.user_favorites_url, self._up('favorites'), 'questions')
 		self.tags = StackExchangeLazySequence(Tag, None, site, json.user_tags_url, self._up('tags'))
 		self.badges = StackExchangeLazySequence(Badge, None, site, json.user_badges_url, self._up('badges'))

@@ -1,6 +1,5 @@
 # stackcore.py - JSONModel/Enumeration + other utility classes that don't really belong now that the API's multi-file
-# This file is safe to "import *" - it doesn't even
-# import anything itself.
+# This file is relatively safe to "import *"
 
 import datetime
 from math import floor
