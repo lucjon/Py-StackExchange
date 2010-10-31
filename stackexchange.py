@@ -135,6 +135,22 @@ class Comment(JSONModel):
 	def __str__(self):
 		return str(unicode(self))
 
+#### Revisions #
+class PostRevision(JSONModel):
+	transfer = ('body', 'comment', 'is_question', 'is_rollback', 'last_body', 'last_title', 'revision_guid',
+				'revision_number', 'title', 'set_community_wiki', 'post_id', 'last_tags', 'tags')
+	
+	def _extend(self, json, site):
+		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+
+		part = json.user
+		self.user = User.partial(lambda self: self.site.user(self.id), site, {
+			'id': part['user_id'],
+			'user_type': Enumeration.from_string(part['user_type'], UserType),
+			'display_name': part['display_name'],
+			'reputation': part['reputation'],
+			'email_hash': part['email_hash']
+		})
 
 ##### Users ####
 class Tag(JSONModel):
@@ -202,7 +218,6 @@ class FormattedReputation(int):
 			return '%dk' % (rep / 1000.0)
 		else:
 			return '%.1fk' % (rep / 1000.0)
-
 
 class User(JSONModel):
 	"""Describes a user on a StackExchange site."""
@@ -418,7 +433,18 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		return self.build('badges/tags', Badge, 'badges', kw)
 	
 	def all_tags(self, **kw):
+		'''Returns the set of all tags on the site.'''
 		return self.build('tags', Tag, 'tags', kw)
 	
 	def stats(self, **kw):
+		'''Returns statistical information on the site, such as number of questions.'''
 		return self.build('stats', Statistics, 'statistics', kw)[0]
+	
+	def revision(self, postid, guid, **kw):
+		return self.build('revisions/' + str(postid) + '/' + guid, PostRevision, 'revisions', kw)
+
+	def revisions(self, postid, **kw):
+		return self.build('revisions/' + str(postid), PostRevision, 'revisions', kw)
+	
+	def search(self, **kw):
+		return self.build('search', Question, 'questions', kw)
