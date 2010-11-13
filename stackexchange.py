@@ -3,11 +3,7 @@ from stackweb import WebRequestManager
 from stackcore import *
 
 # Site constants
-StackOverflow = 'api.stackoverflow.com'
-SuperUser = 'api.superuser.com'
-ServerFault = 'api.serverfault.com'
-StackApps = 'api.stackapps.com'
-MetaStackOverflow = 'api.meta.stackoverflow.com'
+from stacksites import *
 
 ##### Statistics    ###
 class Statistics(JSONModel):
