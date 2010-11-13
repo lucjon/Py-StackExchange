@@ -18,10 +18,10 @@ total_rep1, total_rep2 = 0, 0
 
 sites = []
 
-for site in stackauth.StackAuth().associated(so, user1):
+for site in stackauth.StackAuth().api_associated(so, user1):
 	rep1[site.on_site.name] = site.reputation
 	sites.append(site.on_site.name)
-for site in stackauth.StackAuth().associated(so, user2):
+for site in stackauth.StackAuth().api_associated(so, user2):
 	rep2[site.on_site.name] = site.reputation
 
 for site in sites:
