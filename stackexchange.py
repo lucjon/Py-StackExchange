@@ -422,3 +422,38 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 	
 	def stats(self, **kw):
 		return self.build('stats', Statistics, 'statistics', kw)[0]
+	
+	def __add__(self, other):
+		if isinstance(other, Site):
+			return CompositeSite(self, other)
+		else:
+			raise NotImplemented
+
+class CompositeSite(object):
+	def __init__(self, s1, s2):
+		self.site_one = s1
+		self.site_two = s2
+
+	def __getattr__(self, a):
+		if hasattr(self.site_one, a) and hasattr(self.site_two, a) and callable(getattr(self.site_one, a)):
+			def handle(*ps, **kws):
+				res1 = getattr(self.site_one, a)(*ps, **kws)
+				res2 = getattr(self.site_two, a)(*ps, **kws)
+				
+				if hasattr(res1, '__iter__') and hasattr(res2, '__iter__'):
+					return res1 + res2
+				else:
+					return (res1, res2)
+
+			return handle
+		else:
+			raise AttributeError(a)
+	
+	def __sub__(self, other):
+		if other is self.site_one:
+			return self.site_two
+		elif other is self.site_two:
+			return self.site_one
+		else:
+			raise NotImplemented
+
