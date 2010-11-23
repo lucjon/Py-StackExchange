@@ -26,13 +26,23 @@ class SiteDefinition(JSONModel):
 		domain = self.api_endpoint[7:]
 		return Site(domain, **kw)
 
+class Area51(object):
+	def __getattr__(self, attr):
+		raise Exception("You have encountered, through StackAuth association, Area51. Area51 is not accessible through the API.")
+
 class UserAssociation(JSONModel):
 	transfer = ('display_name', 'reputation', 'email_hash')
+	has_endpoint = True
 	
 	def _extend(self, json, stackauth):
 		self.id = json.user_id
 		self.user_type = UserType.from_string(json.user_type)
-		self.on_site = SiteDefinition(json.on_site, stackauth)
+		if not hasattr(json, 'on_site'):
+			# assume it's Area 51 if we can't get a site out of it
+			self.on_site = Area51()
+			self.has_endpoint = False
+		else:
+			self.on_site = SiteDefinition(json.on_site, stackauth)
 	
 	def get_user(self):
 		return self.on_site.get_site().user(self.id)
@@ -61,16 +71,26 @@ class StackAuth(object):
 		"""Returns information about all the StackExchanges ites currently lited on StackAuth.com"""
 		return self.build(self.url('sites'), SiteDefinition, 'api_sites')
 	
-	def associated_from_assoc(self, assoc_id):
+	def api_associated_from_assoc(self, assoc_id):
+		return self.associated_from_assoc(assoc_id, only_valid=True)
+
+	def associated_from_assoc(self, assoc_id, **kw):
 		"""Returns, given a user's *association ID*, all their accounts on other StackExchange sites."""
-		return self.build(self.url('users/%s/associated' % assoc_id), UserAssociation, 'associated_users')
+		accounts = self.build(self.url('users/%s/associated' % assoc_id), UserAssociation, 'associated_users')
+		if 'only_valid' in kw and kw['only_valid']:
+			return tuple([acc for acc in accounts if acc.has_endpoint])
+		else:
+			return accounts
 	
-	def associated(self, site, user_id):
+	def associated(self, site, user_id, **kw):
 		"""Returns, given a target site object and a user ID for that site, their associated accounts on other StackExchange sites."""
 		user = site.user(user_id)
 		if hasattr(user, 'association_id'):
 			assoc = user.association_id
-			return self.associated_from_assoc(assoc)
+			return self.associated_from_assoc(assoc, **kw)
 		else:
 			return []
+	
+	def api_associated(self, site, uid):
+		return self.associated(site, uid, only_valid=True)
 	

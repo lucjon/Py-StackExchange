@@ -173,7 +173,9 @@ class JSONMangler(object):
 			json_item['_params_'] = params[-1] # convenient access to the kw hash
 			items.append(typ(json_item, site))
 
-		return StackExchangeResultset(items, page, pagesize, params)
+		rs = StackExchangeResultset(items, page, pagesize, params)
+		rs.total = json['total']
+		return rs
 	
 	@staticmethod
 	def normal_to_resultset(site, json, typ, collection):

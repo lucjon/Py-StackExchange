@@ -12,7 +12,7 @@ print 'StackOverflow user %d\'s accounts:' % user_id
 
 stack_auth = StackAuth()
 so = Site(StackOverflow)
-accounts = stack_auth.associated(so, user_id)
+accounts = stack_auth.api_associated(so, user_id)
 reputation = {}
 
 for account in accounts:
