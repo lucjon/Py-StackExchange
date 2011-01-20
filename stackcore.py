@@ -114,6 +114,10 @@ to the initial function which created the resultset."""
 	def extend_next(self):
 		"""Returns a new resultset containing data from this resultset AND from the next page."""
 		return self.fetch_extended(self.page + 1)
+	
+	def fetch(self):
+		# Do nothing, but allow multiple fetch calls
+		return self
 
 class NeedsAwokenError(Exception):
 	"""An error raised when an attempt is made to access a property of a lazy collection that requires the data to have been fetched,

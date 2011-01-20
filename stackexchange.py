@@ -102,13 +102,17 @@ class Comment(JSONModel):
 		self.id = json.comment_id
 		
 		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
-		self.owner_id = json.owner['owner_id'] if 'owner_id' in json.owner else json.owner['user_id']
-		self.owner = User.partial(lambda self: self.site.user(self.id), site, {
-			'id': self.owner_id, 
-			'user_type': Enumeration.from_string(json.owner['user_type'], UserType),
-			'display_name': json.owner['display_name'],
-			'reputation': json.owner['reputation'],
-			'email_hash': json.owner['email_hash']})
+		
+		if hasattr(json, 'owner'):
+			self.owner_id = json.owner['owner_id'] if 'owner_id' in json.owner else json.owner['user_id']
+			self.owner = User.partial(lambda self: self.site.user(self.id), site, {
+				'id': self.owner_id, 
+				'user_type': Enumeration.from_string(json.owner['user_type'], UserType),
+				'display_name': json.owner['display_name'],
+				'reputation': json.owner['reputation'],
+				'email_hash': json.owner['email_hash']})
+		else:
+			self.owner = None
 		
 		if hasattr(json, 'reply_to'):
 			self.reply_to_user_id = json.reply_to['user_id']
