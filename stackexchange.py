@@ -231,6 +231,12 @@ class FormattedReputation(int):
 		else:
 			return '%.1fk' % (rep / 1000.0)
 
+class TopTag(JSONModel):
+	transfer = ('tag_name', 'question_score', 'question_count', 'answer_score', 'answer_count')
+
+	def __repr__(self):
+		return "<TopTag '%s' Q:%d A:%d>" % (self.tag_name, self.question_score, self.answer_score)
+
 class User(JSONModel):
 	"""Describes a user on a StackExchange site."""
 
@@ -253,6 +259,8 @@ class User(JSONModel):
 		self.mentioned = StackExchangeLazySequence(Comment, None, site, json.user_mentioned_url, self._up('mentioned'), 'comments')
 		self.comments = StackExchangeLazySequence(Comment, None, site, json.user_comments_url, self._up('comments'))
 		self.reputation_detail = StackExchangeLazySequence(RepChange, None, site, json.user_reputation_url, self._up('reputation_detail'))
+		self.top_answer_tags = StackExchangeLazySequence(TopTag, None, site, 'users/%d/top-answer-tags' % self.id, self._up('top_answer_tags'), 'top_tags')
+		self.top_question_tags = StackExchangeLazySequence(TopTag, None, site, 'users/%d/top-question-tags' % self.id, self._up('top_question_tags'), 'top_tags')
 
 		self.vote_counts = (self.up_vote_count, self.down_vote_count)
 
@@ -272,6 +280,15 @@ class User(JSONModel):
 	
 	def has_privelege(self, privelege):
 		return self.reputation >= privelege.reputation
+	
+	def _get_real_tag(self, tag):
+		return tag.name if isinstance(tag, Tag) else tag
+
+	def top_answers_in_tag(self, tag, **kw):
+		return self.site.build('users/%d/tags/%s/top-answers' % (self.id, self._get_real_tag(tag)), Answer, 'answers', kw)
+	
+	def top_questions_in_tag(self, tag, **kw):
+		return self.site.build('users/%d/tags/%s/top-questions' % (self.id, self._get_real_tag(tag)), Question, 'questions', kw)
 	
 	def __unicode__(self):
 		return 'User %d [%s]' % (self.id, self.display_name)
