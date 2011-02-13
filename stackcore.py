@@ -217,3 +217,12 @@ def format_relative_date(date):
 		return 'yesterday'
 	else:
 		return date.strftime('M j / y - H:i')
+
+class Sort(Enumeration):
+	Activity = 'activity'
+	Views = 'views'
+	Creation = 'creation'
+	Votes = 'votes'
+
+ASC = 'asc'
+DESC = 'desc'

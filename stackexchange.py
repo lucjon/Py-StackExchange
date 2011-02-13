@@ -1,4 +1,4 @@
-import datetime, operator
+import datetime, operator, time
 from stackweb import WebRequestManager
 from stackcore import *
 
@@ -303,7 +303,7 @@ class QuestionsQuery(object):
 		if ids is None and user_id is not None:
 			return self.by_user(user_id, **kw)
 		elif ids is None and user_id is None:
-			raise TypeError('questions() must be called with one, or a list of, question IDs.')
+			return self.site.build('questions', Question, 'questions', kw)
 		else:
 			return self.site._get(Question, ids, 'questions', kw)
 	
@@ -377,11 +377,13 @@ through here."""
 	
 	def _kw_to_str(self, ob):
 		try:
-			if not isinstance(ob, str):
+			if isinstance(ob, datetime.datetime):
+				return str(time.mktime(ob.timetuple()))
+			elif isinstance(ob, str):
+				return ob
+			else:
 				i = iter(ob)
 				return ';'.join(i)
-			else:
-				return ob
 		except TypeError:
 			return str(ob).lower()
 
