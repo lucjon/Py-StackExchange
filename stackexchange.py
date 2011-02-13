@@ -96,6 +96,12 @@ class Question(JSONModel):
 
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.id)
 	
+	def linked(self):
+		return self.site.questions(linked_to=self.id)
+	
+	def related(self):
+		return self.site.questions(related_to=self.id)
+
 	def __repr__(self):
 		return "<Question '%s' @ %x>" % (self.title, id(self))
 
@@ -262,12 +268,18 @@ class User(JSONModel):
 		
 		self.url = 'http://' + self.site.root_domain + '/users/' + str(self.id)
 	
+	def has_privelege(self, privelege):
+		return self.reputation >= privelege.reputation
+	
 	def __unicode__(self):
 		return 'User %d [%s]' % (self.id, self.display_name)
 	def __str__(self):
 		return str(unicode(self))
 	def __repr__(self):
 		return '<Answer %d @ %d>' % (self.id, id(self))
+
+class Privelege(JSONModel):
+	transfer = ('short_description', 'description', 'reputation')
 
 
 class Site(object):
@@ -329,14 +341,13 @@ through here."""
 		if prop not in kw:
 			raise LookupError('No user ID provided.')
 		else:
-			tid = kw[prop]
+			tid = self.vectorise(kw[prop], User)
 			del kw[prop]
 
-			return self.build('users/%d/%s' % (tid, qs), typ, coll, kw)
+			return self.build('users/%s/%s' % (tid, qs), typ, coll, kw)
 
 	def be_inclusive(self):
 		"""Include the body and comments of a post, where appropriate, by default."""
-
 		self.include_body, self.include_comments = True, True
 
 	def build(self, url, typ, collection, kw={}):
@@ -352,24 +363,31 @@ through here."""
 		
 	def build_from_snippet(self, json, typ):
 		return StackExchangeResultSet([typ(x, self) for x in json])
-	
+
+	def vectorise(self, lst, or_of_type=None):
+		if hasattr(lst, '__iter__'):
+			return ';'.join([str(x) for x in ids])
+		elif or_of_type is not None and isinstance(lst, or_of_type) and hasattr(lst, 'id'):
+			return str(lst.id)
+		else:
+			return str(lst)
+
 	def _get(self, typ, ids, coll, kw):
-		root = self.URL_Roots[typ] % ';'.join([str(x) for x in ids])
+		root = self.URL_Roots[typ] % self.vectorise(ids)
 		return self.build(root, typ, coll, kw)
+
 
 	def user(self, nid, **kw):
 		"""Retrieves an object representing the user with the ID `nid`."""
-
 		u, = self.users((nid,), **kw)
 		return u
 	
 	def users(self, ids, **kw):
 		"""Retrieves a list of the users with the IDs specified in the `ids' parameter."""
 		return self._get(User, ids, 'users', kw)
-
+	
 	def answer(self, nid, **kw):
 		"""Retrieves an object describing the answer with the ID `nid`."""
-
 		a, = self.answers((nid,), **kw)
 		return a
 	
@@ -401,14 +419,31 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		q, = self.questions((nid,), **kw)
 		return q
 	
-	def questions(self, ids=None, **kw):
-		"""Retrieves a set of the comments with the IDs specified in the 'ids' parameter."""
+	def questions(self, ids=None, user_id=None, related_to=None, linked_to=None, favourited_by=None, **kw):
+		"""Retrieves a set of the questions, either:
+			- with the IDs specified in the 'ids' parameter
+			- related to the question, set of questions, ID or set of IDs passed in as (related_to=)
+			- linked to the question, ... passed in as (linked_to=)
+			- written by the user, set of users, user ID or set of IDs passed in as (user_id=)
+			- favourited by the user... passed in as (favorited_by=) [note AmE spelling]"""
 		if 'answers' not in kw:
 			kw['answers'] = 'true'
-		if ids is None and 'user_id' in kw:
-			return self._user_prop('questions', Question, 'questions', kw)
-		elif ids is None:
-			return self.build('questions', Question, 'questions', kw)
+
+		if ids is None:
+			if user_id is not None:
+				kw['user_id'] = user_id
+				return self._user_prop('questions', Question, 'questions', kw)
+			elif related_to is not None:
+				url = 'questions/%s/related' % self.vectorise(related_to, Question)
+				return self.build(url, Question, 'questions', kw)
+			elif linked_to is not None:
+				url = 'questions/%s/linked' % self.vectorise(linked_to, Question)
+				return self.build(url, Question, 'questions', kw)
+			elif favourited_by is not None:
+				kw['user_id'] = favourited_by
+				return self._user_prop('favorites', Question, 'questions', kw)
+			else:
+				return self.build('questions', Question, 'questions', kw)
 		else:
 			return self._get(Question, ids, 'questions', kw)
 	
@@ -437,6 +472,14 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		"""Returns an object representing the badge with the ID 'nid'."""
 		b, = self.badges((nid,), kw)
 		return b
+	
+	def comments(self):
+		"""Returns all the comments on the site."""
+		return self.build('comments', Comment, 'comments', kw)
+	
+	def priveleges(self):
+		"""Returns all the priveleges a user can have on the site."""
+		return self.build('priveleges', Privelege, 'priveleges', kw)
 	
 	def all_tag_badges(self, **kw):
 		"""Returns the set of all the tag-based badges: those which are awarded for performance on a specific tag."""

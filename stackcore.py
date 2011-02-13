@@ -202,7 +202,7 @@ def format_relative_date(date):
 	now = datetime.datetime.now()
 	diff = (now - date).seconds
 
-	# Anti-repitition! These simplify the code somewhat.
+	# Anti-repetition! These simplify the code somewhat.
 	plural = lambda d: 's' if d != 1 else ''
 	frmt   = lambda d: (diff / float(d), plural(diff / float(d)))
 

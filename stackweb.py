@@ -23,6 +23,8 @@ class WebRequest(object):
 		return str(self.data)
 
 class WebRequestManager(object):
+	debug = False
+
 	def __init__(self, **kw):
 		# Whether to attempt to de-gzip response
 		self.use_gzip = kw['gzip'] if 'gzip' in kw else True
@@ -35,6 +37,9 @@ class WebRequestManager(object):
 	window = None
 	num_requests = 0
 	def request(self, url, params):
+		if WebRequestManager.debug:
+			print 'R>', url
+
 		if self.impose_throttling:
 			now = datetime.datetime.now()
 			if (window - now).seconds >= 5:
