@@ -9,6 +9,7 @@ class JSONModel(object):
 	"""The base class of all the objects which describe API objects directly - ie, those which take JSON objects as parameters to their constructor."""
 
 	def __init__(self, json, site, skip_ext=False):
+		self.json = json
 		self.json_ob = DictObject(json)
 		self.site = site
 
@@ -25,8 +26,8 @@ class JSONModel(object):
 
 			if isinstance(res, dict):
 				self.__init__(res, self.site)
-			elif hasattr(res, 'json_ob'):
-				self.__init__(res.json_ob, self.site)
+			elif hasattr(res, 'json'):
+				self.__init__(res.json, self.site)
 			else:
 				raise ValueError('Supplied fetch callback did not return a usable value.')
 		else:

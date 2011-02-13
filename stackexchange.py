@@ -67,7 +67,6 @@ class Answer(JSONModel):
 
 class Question(JSONModel):
 	"""Describes a question on a StackExchange site."""
-
 	transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count', 'view_count', 'score', 'community_owned', 'title', 'body')
 
 	def _extend(self, json, site):
@@ -87,7 +86,7 @@ class Question(JSONModel):
 		if hasattr(json, 'owner'):
 			self.owner_id = json.owner['user_id']
 	
-			owner_dict = json.owner
+			owner_dict = dict(json.owner)
 			owner_dict['id'] = self.owner_id
 			del owner_dict['user_id']
 			owner_dict['user_type'] = UserType.from_string(owner_dict['user_type'])
@@ -96,6 +95,9 @@ class Question(JSONModel):
 
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.id)
 	
+	def fetch_callback(self, _, site):
+		return site.question(self.id)
+
 	def linked(self):
 		return self.site.questions(linked_to=self.id)
 	
@@ -276,11 +278,77 @@ class User(JSONModel):
 	def __str__(self):
 		return str(unicode(self))
 	def __repr__(self):
-		return '<Answer %d @ %d>' % (self.id, id(self))
+		return '<User %d @ %d>' % (self.id, id(self))
 
 class Privelege(JSONModel):
 	transfer = ('short_description', 'description', 'reputation')
 
+
+class QuestionsQuery(object):
+	def __init__(self, site):
+		self.site = site
+
+	def check(self, kw):
+		if 'answers' not in kw:
+			kw['answers'] = 'true'
+		if self.site.include_body:
+			kw['body'] = 'true'
+		if self.site.include_comments:
+			kw['comments'] = 'true'
+	
+	def __call__(self, ids=None, user_id=None, **kw):
+		self.check(kw)
+		
+		# Compatibility hack, as user_id= was in versions below v1.1
+		if ids is None and user_id is not None:
+			return self.by_user(user_id, **kw)
+		elif ids is None and user_id is None:
+			raise TypeError('questions() must be called with one, or a list of, question IDs.')
+		else:
+			return self.site._get(Question, ids, 'questions', kw)
+	
+	def linked_to(self, qn, **kw):
+		self.check(kw)
+		url = 'questions/%s/linked' % self.site.vectorise(qn, Question)
+		return self.site.build(url, Question, 'questions', kw)
+
+	def related_to(self, qn, **kw):
+		self.check(kw)
+		url = 'questions/%s/related' % self.site.vectorise(qn, Question)
+		return self.site.build(url, Question, 'questions', kw)
+	
+	def by_user(self, usr, **kw):
+		self.check(kw)
+		kw['user_id'] = usr
+		return self.site._user_prop('questions', Question, 'questions', kw)
+	
+	def unanswered(self, by=None, **kw):
+		self.check(kw)
+		
+		if by is None:
+			return self.site.build('questions/unanswered', Question, 'questions', kw)
+		else:
+			kw['user_id'] = by
+			return self.site._user_prop('questions/unanswered', Question, 'questions', kw)
+	
+	def no_answers(self, by=None, **kw):
+		self.check(kw)
+
+		if by is None:
+			return self.site.build('questions/no-answers', Question, 'questions', kw)
+		else:
+			kw['user_id'] = by
+			return self.site._user_prop('questions/no-answers', Question, 'questions', kw)
+	
+	def unaccepted(self, by, **kw):
+		self.check(kw)
+		kw['user_id'] = by
+		return self.site._user_prop('questions/unaccepted', Questions, 'questions', kw)
+	
+	def favorited_by(self, by, **kw):
+		self.check(kw)
+		kw['user_id'] = by
+		return self.site._user_prop('favorites', Question, 'questions', kw)
 
 class Site(object):
 	"""Stores information and provides methods to access data on a StackExchange site. This class is the 'root' of the API - all data is accessed
@@ -352,7 +420,6 @@ through here."""
 
 	def build(self, url, typ, collection, kw={}):
 		"""Builds a StackExchangeResultset object from the given URL and type."""
-
 		if 'body' not in kw:
 			kw['body'] = str(self.include_body).lower()
 		if 'comments' not in kw:
@@ -366,7 +433,7 @@ through here."""
 
 	def vectorise(self, lst, or_of_type=None):
 		if hasattr(lst, '__iter__'):
-			return ';'.join([str(x) for x in ids])
+			return ';'.join([str(x) for x in lst])
 		elif or_of_type is not None and isinstance(lst, or_of_type) and hasattr(lst, 'id'):
 			return str(lst.id)
 		else:
@@ -408,7 +475,7 @@ through here."""
 	
 	def comments(self, ids=None, **kw):
 		"""Retrieves a set of the comments with the IDs specified in the 'ids' parameter."""
-		if ids == None:
+		if ids is None:
 			return self._user_prop('comments', Comment, 'comments', kw)
 		else:
 			return self._get(Comment, ids, 'comments', kw)
@@ -419,33 +486,7 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		q, = self.questions((nid,), **kw)
 		return q
 	
-	def questions(self, ids=None, user_id=None, related_to=None, linked_to=None, favourited_by=None, **kw):
-		"""Retrieves a set of the questions, either:
-			- with the IDs specified in the 'ids' parameter
-			- related to the question, set of questions, ID or set of IDs passed in as (related_to=)
-			- linked to the question, ... passed in as (linked_to=)
-			- written by the user, set of users, user ID or set of IDs passed in as (user_id=)
-			- favourited by the user... passed in as (favorited_by=) [note AmE spelling]"""
-		if 'answers' not in kw:
-			kw['answers'] = 'true'
-
-		if ids is None:
-			if user_id is not None:
-				kw['user_id'] = user_id
-				return self._user_prop('questions', Question, 'questions', kw)
-			elif related_to is not None:
-				url = 'questions/%s/related' % self.vectorise(related_to, Question)
-				return self.build(url, Question, 'questions', kw)
-			elif linked_to is not None:
-				url = 'questions/%s/linked' % self.vectorise(linked_to, Question)
-				return self.build(url, Question, 'questions', kw)
-			elif favourited_by is not None:
-				kw['user_id'] = favourited_by
-				return self._user_prop('favorites', Question, 'questions', kw)
-			else:
-				return self.build('questions', Question, 'questions', kw)
-		else:
-			return self._get(Question, ids, 'questions', kw)
+	questions = property(lambda s: QuestionsQuery(s))
 	
 	def recent_questions(self, **kw):
 		"""Returns the set of the most recent questions on the site, by last activity."""
