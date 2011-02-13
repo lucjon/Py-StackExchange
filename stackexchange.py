@@ -62,6 +62,8 @@ class Answer(JSONModel):
 		return u'Answer %d [%s]' % (self.id, self.title)
 	def __str__(self):
 		return str(unicode(self))
+	def __repr__(self):
+		return '<Answer %d @ %x>' % (self.id, id(self))
 
 class Question(JSONModel):
 	"""Describes a question on a StackExchange site."""
@@ -93,6 +95,9 @@ class Question(JSONModel):
 			self.owner = User.partial(lambda self: self.site.user(self.id), site, owner_dict)
 
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.id)
+	
+	def __repr__(self):
+		return "<Question '%s' @ %x>" % (self.title, id(self))
 
 class Comment(JSONModel):
 	"""Describes a comment to a question or answer on a StackExchange site."""
@@ -158,7 +163,6 @@ class Tag(JSONModel):
 
 class BadgeType(Enumeration):
 	"""Describes the rank or type of a badge: one of Bronze, Silver or Gold."""
-
 	Bronze, Silver, Gold = range(3)
 
 class Badge(JSONModel):
@@ -171,6 +175,8 @@ class Badge(JSONModel):
 	
 	def __str__(self):
 		return self.name
+	def __repr__(self):
+		return '<Badge \'%s\' @ %x>' % (self.name, id(self))
 
 class RepChange(JSONModel):
 	"""Describes an event which causes a change in reputation."""
@@ -196,12 +202,10 @@ class TimelineEventType(Enumeration):
 
 class PostType(Enumeration):
 	"""Denotes the type of a post: a question or an answer."""
-
 	Question, Answer = range(2)
 
 class UserType(Enumeration):
 	"""Denotes the status of a user on a site: whether it is Anonymous, Unregistered, Registered or a Moderator."""
-
 	Anonymous, Unregistered, Registered, Moderator = range(4)
 
 class FormattedReputation(int):
@@ -262,6 +266,8 @@ class User(JSONModel):
 		return 'User %d [%s]' % (self.id, self.display_name)
 	def __str__(self):
 		return str(unicode(self))
+	def __repr__(self):
+		return '<Answer %d @ %d>' % (self.id, id(self))
 
 
 class Site(object):
@@ -271,7 +277,7 @@ through here."""
 	def __init__(self, domain, app_key=None):
 		self.domain = domain
 		self.app_key = app_key
-		self.api_version = '1.0'
+		self.api_version = '1.1'
 
 		self.use_gzip = True
 		self.impose_throttling = False
@@ -370,8 +376,10 @@ through here."""
 	def answers(self, ids=None, **kw):
 		"""Retrieves a set of the answers with the IDs specified in the 'ids' parameter, or by the
 		user_id specified."""
-		if ids == None:
+		if ids is None and 'user_id' in kw:
 			return self._user_prop('answers', Answer, 'answers', kw)
+		elif ids is None:
+			return self.build('answers', Answer, 'answers', kw)
 		else:
 			return self._get(Answer, ids, 'answers', kw)
 
@@ -397,8 +405,10 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		"""Retrieves a set of the comments with the IDs specified in the 'ids' parameter."""
 		if 'answers' not in kw:
 			kw['answers'] = 'true'
-		if ids == None:
+		if ids is None and 'user_id' in kw:
 			return self._user_prop('questions', Question, 'questions', kw)
+		elif ids is None:
+			return self.build('questions', Question, 'questions', kw)
 		else:
 			return self._get(Question, ids, 'questions', kw)
 	
