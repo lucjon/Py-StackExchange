@@ -197,6 +197,8 @@ class TagWiki(JSONModel):
 
 class Tag(JSONModel):
 	transfer = ('name', 'count', 'fulfills_required')
+	# Hack so that Site.vectorise() works correctly
+	id = property(lambda self: self.name)
 
 	def _extend(self, json, site):
 		self.synonyms = StackExchangeLazySequence(TagSynonym, None, site, 'tags/%s/synonyms' % self.name, self._up('synonyms'), 'tag_synonyms')
@@ -610,6 +612,17 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 	def search(self, **kw):
 		return self.build('search', Question, 'questions', kw)
 	
+	def similar(self, title, tagged=None, nottagged=None, **kw):
+		if 'answers' not in kw:
+			kw['answers'] = True
+		if tagged is not None:
+			kw['tagged'] = self.vectorise(tagged, Tag)
+		if nottagged is not None:
+			kw['nottagged'] = self.vectorise(nottagged, Tag)
+
+		kw['title'] = title
+		return self.build('similar', Question, 'questions', kw)
+
 	def tags(self, **kw):
 		return self.build('tags', Tag, 'tags', kw)
 	
