@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
 	name = 'py-stackexchange',
 	py_modules = ['stackexchange', 'stackcore', 'stackauth', 'stackweb'],
-	version = '1.0-1',
+	version = '1.1',
 	description = 'A Python binding to the StackExchange (Stack Overflow, Server Fault, etc.) website APIs.',
 	author = 'Lucas Jones',
 	author_email = 'lucas@lucasjones.co.uk',
