@@ -295,7 +295,7 @@ class User(JSONModel):
 	def __str__(self):
 		return str(unicode(self))
 	def __repr__(self):
-		return '<User %d @ %d>' % (self.id, id(self))
+		return "<User '%s' (%d) @ %d>" % (self.display_name, self.id, id(self))
 
 class Privelege(JSONModel):
 	transfer = ('short_description', 'description', 'reputation')
@@ -472,6 +472,10 @@ through here."""
 		"""Retrieves a list of the users with the IDs specified in the `ids' parameter."""
 		return self._get(User, ids, 'users', kw)
 	
+	def moderators(self, **kw):
+		"""Retrieves a list of the moderators on the site."""
+		return self.build('users/moderators', User, 'users', kw)
+
 	def answer(self, nid, **kw):
 		"""Retrieves an object describing the answer with the ID `nid`."""
 		a, = self.answers((nid,), **kw)
