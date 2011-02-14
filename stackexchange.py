@@ -44,24 +44,34 @@ class Answer(JSONModel):
 		self.votes = (self.up_vote_count, self.down_vote_count)
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.question_id) + '/' + str(self.id) + '#' + str(self.id)
 	
-	def _get_user(s,id):
-		s._owner = s.site.user(id)
-		return s._owner
-	def _set_user(s,ob):
-		s._owner = pb
-	def _get_quest(s,id):
-		s._question = s.site.question(id)
-		return s._question
-	def _set_quest(s,ob):
-		s._question = ob
+	def _get_user(self, id):
+		if self._owner is None:
+			self._owner = self.site.user(id)
+		return self._owner
 	
-	question = property(lambda self: self._question if self._question is not None else self._get_quest(self.question_id), _set_quest)
-	owner = property(lambda self: self._owner if self._owner is not None else self._get_user(self.owner_id), _set_user)
+	def _set_user(self, ob):
+		self._owner = ob
+	
+	def _get_quest(self, id):
+		if self._question is None:
+			self._question = self.site.question(id)
+		return self._question
 
+	def _set_quest(self, ob):
+		self._question = ob
+	
+	question = property(_get_quest, _set_quest)
+	owner = property(_get_user, _set_user)
+
+	def fetch_callback(self, _, site):
+		return site.answer(self.id)
+	
 	def __unicode__(self):
 		return u'Answer %d [%s]' % (self.id, self.title)
+	
 	def __str__(self):
 		return str(unicode(self))
+	
 	def __repr__(self):
 		return '<Answer %d @ %x>' % (self.id, id(self))
 
@@ -137,11 +147,16 @@ class Comment(JSONModel):
 				'email_hash': json.reply_to['email_hash']})
 		
 		self.post_type = PostType.from_string(json.post_type)
-	def get_post(self):
+
+	def _get_post(self):
 		if self.post_type == PostType.Question:
 			return self.site.question(self.post_id)
 		elif self.post_type == PostType.Answer:
 			return self.site.answer(self.post_id)
+		else:
+			return None
+	
+	post = property(_get_post)
 	
 	def __unicode__(self):
 		return u'Comment ' + str(self.id)
@@ -557,9 +572,14 @@ through here."""
 		return StackExchangeResultSet([typ(x, self) for x in json])
 
 	def vectorise(self, lst, or_of_type=None):
+		# Ensure we're always dealing with an iterable
+		allowed_types = or_of_type
+		if allowed_types is not None and not hasattr(allowed_types, '__iter__'):
+			allowed_types = (allowed_types, )
+
 		if hasattr(lst, '__iter__'):
 			return ';'.join([str(x) for x in lst])
-		elif or_of_type is not None and isinstance(lst, or_of_type) and hasattr(lst, 'id'):
+		elif allowed_types is not None and [isinstance(lst, type) for type in allowed_types] and hasattr(lst, 'id'):
 			return str(lst.id)
 		else:
 			return str(lst)
@@ -601,13 +621,17 @@ through here."""
 		"""Retrieves an object representing a comment with the ID `nid`."""
 		c, = self.comments((nid,), **kw)
 		return c
-	
-	def comments(self, ids=None, **kw):
-		"""Retrieves a set of the comments with the IDs specified in the 'ids' parameter."""
+
+	def comments(self, ids=None, posts=None, **kw):
+		"""Returns all the comments on the site."""
 		if ids is None:
-			return self._user_prop('comments', Comment, 'comments', kw)
+			if posts is None:
+				return self.build('comments', Comment, 'comments', kw)
+			else:
+				url = 'posts/%s/comments' % self.vectorise(posts, (Question, Answer))
+				return self.build(url, Comment, 'comments', kw)
 		else:
-			return self._get(Comment, ids, 'comments', kw)
+			return self.build('comments/%s' % self.vectorise(ids), Comment, 'comments', kw)
 	
 	def question(self, nid, **kw):
 		"""Retrieves an object representing a question with the ID `nid`. Note that an answer ID can not be specified -
@@ -650,10 +674,6 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 				if badge.name == name:
 					return badge
 			return None
-	
-	def comments(self):
-		"""Returns all the comments on the site."""
-		return self.build('comments', Comment, 'comments', kw)
 	
 	def priveleges(self):
 		"""Returns all the priveleges a user can have on the site."""
