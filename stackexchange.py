@@ -250,15 +250,22 @@ class User(JSONModel):
 		self.reputation = FormattedReputation(json.reputation)
 
 		self.questions = StackExchangeLazySequence(Question, json.question_count, site, json.user_questions_url, self._up('questions'))
+		self.no_answers_questions = StackExchangeLazySequence(Question, None, site, 'users/%d/questions/no-answers' % self.id, self._up('no_answers_questions'), 'questions')
+		self.unanswered_questions = StackExchangeLazySequence(Question, None, site, 'users/%d/questions/unanswered' % self.id, self._up('unanswered_questions'), 'questions')
+		self.unaccepted_questions = StackExchangeLazySequence(Question, None, site, 'users/%d/questions/unaccepted' % self.id, self._up('unaccepted_questions'), 'questions')
+		self.favorites = StackExchangeLazySequence(Question, None, site, json.user_favorites_url, self._up('favorites'), 'questions')
+
 		self.answers = StackExchangeLazySequence(Answer, json.answer_count, site, json.user_answers_url, self._up('answers'))
 		# Grr, American spellings. Using them for consistency with official API.
-		self.favorites = StackExchangeLazySequence(Question, None, site, json.user_favorites_url, self._up('favorites'), 'questions')
 		self.tags = StackExchangeLazySequence(Tag, None, site, json.user_tags_url, self._up('tags'))
 		self.badges = StackExchangeLazySequence(Badge, None, site, json.user_badges_url, self._up('badges'))
 		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.user_timeline_url, self._up('timeline'), 'user_timelines')
+		self.reputation_detail = StackExchangeLazySequence(RepChange, None, site, json.user_reputation_url, self._up('reputation_detail'))
+
 		self.mentioned = StackExchangeLazySequence(Comment, None, site, json.user_mentioned_url, self._up('mentioned'), 'comments')
 		self.comments = StackExchangeLazySequence(Comment, None, site, json.user_comments_url, self._up('comments'))
-		self.reputation_detail = StackExchangeLazySequence(RepChange, None, site, json.user_reputation_url, self._up('reputation_detail'))
+		self.mentioned = StackExchangeLazySequence(Comment, None, site, 'users/%d/mentioned' % self.id, self._up('mentioned'))
+
 		self.top_answer_tags = StackExchangeLazySequence(TopTag, None, site, 'users/%d/top-answer-tags' % self.id, self._up('top_answer_tags'), 'top_tags')
 		self.top_question_tags = StackExchangeLazySequence(TopTag, None, site, 'users/%d/top-question-tags' % self.id, self._up('top_question_tags'), 'top_tags')
 
@@ -289,6 +296,10 @@ class User(JSONModel):
 	
 	def top_questions_in_tag(self, tag, **kw):
 		return self.site.build('users/%d/tags/%s/top-questions' % (self.id, self._get_real_tag(tag)), Question, 'questions', kw)
+	
+	def comments_to(self, user, **kw):
+		uid = user.id if isinstance(user, User) else user
+		return self.site.build('users/%d/comments/%d' % (self.id, uid), Comment, 'comments' ,kw)
 	
 	def __unicode__(self):
 		return 'User %d [%s]' % (self.id, self.display_name)
