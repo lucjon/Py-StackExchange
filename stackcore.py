@@ -65,6 +65,12 @@ class Enumeration(object):
 				return getattr(typ, typ._map[text])
 			elif hasattr(typ, text[0].upper() + text[1:]):
 				return getattr(typ, text[0].upper() + text[1:])
+			elif '_' in text:
+				real_name = ''.join(x.title() for x in text.split('_'))
+				if hasattr(typ, real_name):
+					return getattr(typ, real_name)
+				else:
+					return None
 			else:
 				return None
 		else:

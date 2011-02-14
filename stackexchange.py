@@ -41,6 +41,7 @@ class Answer(JSONModel):
 		if hasattr(json, 'last_activity_date'):
 			self.last_activity_date = datetime.date.fromtimestamp(json.last_activity_date)
 
+		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
 		self.votes = (self.up_vote_count, self.down_vote_count)
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.question_id) + '/' + str(self.id) + '#' + str(self.id)
 	
@@ -83,6 +84,7 @@ class Question(JSONModel):
 		self.id = json.question_id
 
 		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.question_timeline_url, self._up('timeline'))
+		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
 
 		self.comments_url = json.question_comments_url
 		self.comments = StackExchangeLazySequence(Comment, None, site, self.comments_url, self._up('comments'))
@@ -164,12 +166,17 @@ class Comment(JSONModel):
 		return str(unicode(self))
 
 #### Revisions #
+class RevisionType(Enumeration):
+	SingleUser = 'single_user'
+	VoteBased  = 'vote_based'
+
 class PostRevision(JSONModel):
 	transfer = ('body', 'comment', 'is_question', 'is_rollback', 'last_body', 'last_title', 'revision_guid',
 				'revision_number', 'title', 'set_community_wiki', 'post_id', 'last_tags', 'tags')
 	
 	def _extend(self, json, site):
 		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+		self.revision_type = RevisionType.from_string(json.revision_type)
 
 		part = json.user
 		self.user = User.partial(lambda self: self.site.user(self.id), site, {
@@ -179,6 +186,21 @@ class PostRevision(JSONModel):
 			'reputation': part['reputation'],
 			'email_hash': part['email_hash']
 		})
+
+	def _get_post(self):
+		if self.is_question:
+			return self.site.question(self.post_id)
+		else:
+			return self.site.answer(self.post_id)
+	post = property(_get_post)
+
+	# The SE API seems quite inconsistent in this regard; the other methods give a post_type in their JSON
+	def _get_post_type(self):
+		return PostType.Question if self.is_question else PostType.Answer
+	post_type = property(_get_post_type)
+	
+	def __repr__(self):
+		return '<Revision %d of %s%d>' % (self.revision_number, 'Q' if self.is_question else 'A', self.post_id)
 
 ##### Tags #####
 class TagSynonym(JSONModel):
@@ -678,6 +700,10 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 	def priveleges(self):
 		"""Returns all the priveleges a user can have on the site."""
 		return self.build('priveleges', Privelege, 'priveleges', kw)
+
+	def all_nontag_badges(self, **kw):
+		"""Returns the set of all badges which are not tag-based."""
+		return self.build('badges/name', Badge, 'badges', kw)
 	
 	def all_tag_badges(self, **kw):
 		"""Returns the set of all the tag-based badges: those which are awarded for performance on a specific tag."""
@@ -691,11 +717,12 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		'''Returns statistical information on the site, such as number of questions.'''
 		return self.build('stats', Statistics, 'statistics', kw)[0]
 
-	def revision(self, postid, guid, **kw):
-		return self.build('revisions/' + str(postid) + '/' + guid, PostRevision, 'revisions', kw)
+	def revision(self, post, guid, **kw):
+		real_id = post.id if isinstance(post, Question) or isinstance(post, Answer) else post
+		return self.build('revisions/%d/%s' % (real_id, guid), PostRevision, 'revisions', kw)[0]
 
-	def revisions(self, postid, **kw):
-		return self.build('revisions/' + str(postid), PostRevision, 'revisions', kw)
+	def revisions(self, post, **kw):
+		return self.build('revisions/' + self.vectorise(post, (Question, Answer)), PostRevision, 'revisions', kw)
 	
 	def search(self, **kw):
 		return self.build('search', Question, 'questions', kw)
