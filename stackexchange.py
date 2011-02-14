@@ -252,26 +252,64 @@ class RepChange(JSONModel):
 		self.score = self.positive_rep - self.negative_rep
 
 ## Timeline ##
-class TimelineEvent(JSONModel):
-	transfer = ('user_id', 'post_id', 'comment_id', 'action', 'description', 'detail')
-	def _extend(self, json, site):
-		self.timeline_type = TimelineEventType.from_string(json.timeline_type)
-		self.post_type = PostType.from_string(json.post_type)
-		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
-	
 class TimelineEventType(Enumeration):
 	"""Denotes the type of a timeline event."""
 	_map = {'askoranswered': 'AskOrAnswered'}
-	Comment, AskOrAnswered, Badge, Revision, Accepted = range(5)
+
+	Comment = 'comment'
+	AskOrAnswered = 'askoranswered'
+	Badge = 'badge'
+	Revision = 'revision'
+	Accepted = 'accepted'
+
+class TimelineEvent(JSONModel):
+	transfer = ('user_id', 'post_id', 'comment_id', 'action', 'description', 'detail', 'comment_id')
+	_post_related = (TimelineEventType.AskOrAnswered, TimelineEventType.Revision, TimelineEventType.Comment)
+
+	def _extend(self, json, site):
+		self.timeline_type = TimelineEventType.from_string(json.timeline_type)
+		
+		if self.timeline_type in self._post_related:
+			self.post_type = PostType.from_string(json.post_type)
+			self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+	
+	def _get_post(self):
+		if self.timeline_type in self._post_related:
+			if self.post_type == PostType.Question:
+				return self.site.question(self.post_id)
+			else:
+				return self.site.answer(self.post_id)
+		else:
+			return None
+
+	def _get_comment(self):
+		if self.timeline_type == TimelineEventType.Comment:
+			return self.site.comment(self.comment_id)
+		else:
+			return None
+	
+	def _get_badge(self):
+		if self.timeline_type == TimelineEventType.Badge:
+			return self.site.badge(name=self.description)
+		else:
+			return None
+
+	post = property(_get_post)
+	comment = property(_get_comment)
+	badge = property(_get_badge)
+	
 ##############
 
 class PostType(Enumeration):
 	"""Denotes the type of a post: a question or an answer."""
-	Question, Answer = range(2)
+	Question, Answer = 'question', 'answer'
 
 class UserType(Enumeration):
 	"""Denotes the status of a user on a site: whether it is Anonymous, Unregistered, Registered or a Moderator."""
-	Anonymous, Unregistered, Registered, Moderator = range(4)
+	Anonymous = 'anonymous'
+	Registered = 'registered'
+	Unregistered = 'unregistered'
+	Moderator = 'moderator'
 
 class FormattedReputation(int):
 	def format(rep):
@@ -301,7 +339,7 @@ class User(JSONModel):
 		'view_count', 'up_vote_count', 'down_vote_count', 'association_id')
 	def _extend(self, json, site):
 		self.id = json.user_id
-		self.user_type = Enumeration.from_string(json.user_type, UserType)
+		self.type = Enumeration.from_string(json.user_type, UserType)
 		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
 		self.last_access_date = datetime.date.fromtimestamp(json.last_access_date)
 		self.reputation = FormattedReputation(json.reputation)
@@ -339,6 +377,7 @@ class User(JSONModel):
 		}
 		self.gold_badges, self.silver_badges, self.bronze_badges = self.badge_counts_t
 		self.badge_total = reduce(operator.add, self.badge_counts_t)
+		self.is_moderator = self.type == UserType.Moderator
 		
 		self.url = 'http://' + self.site.root_domain + '/users/' + str(self.id)
 	
@@ -599,10 +638,18 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		else:
 			return self._get(Badge, ids, 'users', kw)
 
-	def badge(self, nid, **kw):
-		"""Returns an object representing the badge with the ID 'nid'."""
-		b, = self.badges((nid,), kw)
-		return b
+	def badge(self, nid, name=None, **kw):
+		"""Returns an object representing the badge with the ID 'nid', or with the name passed in as name=."""
+		if name is None:
+			b, = self.badges((nid,), kw)
+			return b
+		else:
+			# We seem to need to get all badges and find it by name. Sigh.
+			all_badges = self.badges()
+			for badge in all_badges:
+				if badge.name == name:
+					return badge
+			return None
 	
 	def comments(self):
 		"""Returns all the comments on the site."""
