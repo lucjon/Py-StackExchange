@@ -195,6 +195,21 @@ class TagWiki(JSONModel):
 		del excerpt_editor['user_id']
 		self.last_excerpt_editor = User.partial(lambda s: s.site.user(self.id), site, excerpt_editor)
 
+class Period(Enumeration):
+	AllTime, Month = 'all-time', 'month'
+
+class TopUser(JSONModel):
+	transfer = ('score', 'post_count')
+	
+	def _extend(self, json, site):
+		user_dict = dict(json.user)
+		user_dict['id'] = user_dict['user_id']
+		del user_dict['user_id']
+		self.user = User.partial(lambda self: self.site.user(self.id), site, user_dict)
+	
+	def __repr__(self):
+		return "<TopUser '%s' (score %d)>" % (self.user.display_name, self.score)
+
 class Tag(JSONModel):
 	transfer = ('name', 'count', 'fulfills_required')
 	# Hack so that Site.vectorise() works correctly
@@ -203,6 +218,12 @@ class Tag(JSONModel):
 	def _extend(self, json, site):
 		self.synonyms = StackExchangeLazySequence(TagSynonym, None, site, 'tags/%s/synonyms' % self.name, self._up('synonyms'), 'tag_synonyms')
 		self.wiki = StackExchangeLazyObject(TagWiki, site, 'tags/%s/wikis' % self.name, self._up('wiki'), 'tag_wikis')
+	
+	def top_askers(self, period, **kw):
+		return self.site.build('tags/%s/top-askers/%s' % (self.name, period), TopUser, 'top_users', kw)
+
+	def top_answerers(self, period, **kw):
+		return self.site.build('tags/%s/top-answerers/%s' % (self.name, period), TopUser, 'top_users', kw)
 
 ##### Users ####
 class BadgeType(Enumeration):
