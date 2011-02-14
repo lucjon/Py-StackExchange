@@ -1,6 +1,6 @@
 # stackweb.py - Core classes for web-request stuff
 
-import urllib2, httplib, datetime, operator, StringIO, gzip, time
+import urllib2, httplib, datetime, operator, StringIO, gzip, time, urllib
 import datetime
 try:
 	import json
@@ -25,21 +25,16 @@ class WebRequest(object):
 class WebRequestManager(object):
 	debug = False
 
-	def __init__(self, **kw):
-		# Whether to attempt to de-gzip response
-		self.use_gzip = kw['gzip'] if 'gzip' in kw else True
+	def __init__(self, impose_throttling=False, throttle_stop=True):
 		# Whether to monitor requests for overuse of the API
-		self.impose_throttling = kw['throttle'] if 'throttle' in kw else False
+		self.impose_throttling = impose_throttling
 		# Whether to throw an error (when True) if the limit is reached, or wait until another request
 		# can be made (when False).
-		self.throttle_stop = kw['throttle_stop'] if 'throttle_stop' in kw else True
+		self.throttle_stop = throttle_stop
 	
 	window = None
 	num_requests = 0
 	def request(self, url, params):
-		if WebRequestManager.debug:
-			print 'R>', url
-
 		if self.impose_throttling:
 			now = datetime.datetime.now()
 			if (window - now).seconds >= 5:
@@ -54,28 +49,33 @@ class WebRequestManager(object):
 					time.sleep(5 - (window - now).seconds + 0.1)
 
 		done = False
+
+		# Quote URL fields (mostly for 'c#'), but not : in http://
+		components = url.split('/')
+		url = components[0] + '/'  + ('/'.join(urllib.quote(path) for path in components[1:]))
+
 		for k, v in params.iteritems():
 			if not done:
 				url += '?'
 				done = True
 			else: url += '&'
 
-			url += '%s=%s' % (k, v)
+			url += '%s=%s' % (k, urllib.quote(v))
+
+		if WebRequestManager.debug:
+			print 'R>', url
+
 		request = urllib2.Request(url)
 		
-		if self.use_gzip:
-			request.add_header('Accept-encoding', 'gzip')
+		request.add_header('Accept-encoding', 'gzip')
 		req_open = urllib2.build_opener()
 		conn = req_open.open(request)
 
 		req_data = conn.read()
 
-		if self.use_gzip:
-			data_stream = StringIO.StringIO(req_data)
-			gzip_stream = gzip.GzipFile(fileobj=data_stream)
-			actual_data = gzip_stream.read()
-		else:
-			actual_data = req_data
+		data_stream = StringIO.StringIO(req_data)
+		gzip_stream = gzip.GzipFile(fileobj=data_stream)
+		actual_data = gzip_stream.read()
 
 		info = conn.info()
 		conn.close()

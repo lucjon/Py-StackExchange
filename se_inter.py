@@ -1,4 +1,4 @@
-#!/usr/bin/python -i
+#!/usr/bin/env ipython
 # Saves me quite a bit of typing during interactive
 # testing sessions.
 # Just execute.

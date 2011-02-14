@@ -158,6 +158,26 @@ required - not on object creation."""
 			self.fetch_callback(res)
 		return res
 
+class StackExchangeLazyObject(list):
+	"""Provides a proxy to fetching a single item from a collection, lazily."""
+
+	def __init__(self, m_type, site, url, fetch=None, collection=None):
+		self.m_type = m_type
+		self.site = site
+		self.url = url
+		self.fetch_callback = fetch
+		self.collection = collection if collection != None else self._collection(url)
+	
+	def fetch(self, **kw):
+		"""Fetch, from the API, the data supposed to be held."""
+		res = self.site.build(self.url, self.m_type, self.collection, kw)[0]
+		if self.fetch_callback != None:
+			self.fetch_callback(res)
+		return res
+	
+	def __getattr__(self, key):
+		raise NeedsAwokenError
+
 #### Hack, because I can't be bothered to fix my mistaking JSON's output for an object not a dict
 # Attrib: Eli Bendersky, http://stackoverflow.com/questions/1305532/convert-python-dict-to-object/1305663#1305663
 class DictObject:

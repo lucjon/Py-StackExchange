@@ -1,4 +1,4 @@
-import datetime, operator, time
+import datetime, operator, time, urllib
 from stackweb import WebRequestManager
 from stackcore import *
 
@@ -165,10 +165,44 @@ class PostRevision(JSONModel):
 			'email_hash': part['email_hash']
 		})
 
-##### Users ####
-class Tag(JSONModel):
-	transfer = ('name', 'count', 'user_id')
+##### Tags #####
+class TagSynonym(JSONModel):
+	transfer = ('from_tag', 'to_tag', 'applied_count')
 
+	def _extend(self, json, site):
+		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+		self.last_applied_date = datetime.date.fromtimestamp(json.last_applied_date)
+	
+	def __repr__(self):
+		return "<TagSynonym '%s'->'%s'>" % (self.from_tag, self.to_tag)
+
+class TagWiki(JSONModel):
+	transfer = ('tag_name')
+
+	def _extend(self, json, site):
+		self.body = json.wiki_body
+		self.excerpt = json.wiki_excerpt
+		self.body_last_edit_date = datetime.date.fromtimestamp(json.body_last_edit_date)
+		self.excerpt_last_edit_date = datetime.date.fromtimestamp(json.excerpt_last_edit_date)
+
+		body_editor = dict(json.last_body_editor)
+		body_editor['id'] = body_editor['user_id']
+		del body_editor['user_id']
+		self.last_body_editor = User.partial(lambda s: s.site.user(self.id), site, body_editor)
+
+		excerpt_editor = dict(json.last_excerpt_editor)
+		excerpt_editor['id'] = excerpt_editor['user_id']
+		del excerpt_editor['user_id']
+		self.last_excerpt_editor = User.partial(lambda s: s.site.user(self.id), site, excerpt_editor)
+
+class Tag(JSONModel):
+	transfer = ('name', 'count', 'fulfills_required')
+
+	def _extend(self, json, site):
+		self.synonyms = StackExchangeLazySequence(TagSynonym, None, site, 'tags/%s/synonyms' % self.name, self._up('synonyms'), 'tag_synonyms')
+		self.wiki = StackExchangeLazyObject(TagWiki, site, 'tags/%s/wikis' % self.name, self._up('wiki'), 'tag_wikis')
+
+##### Users ####
 class BadgeType(Enumeration):
 	"""Describes the rank or type of a badge: one of Bronze, Silver or Gold."""
 	Bronze, Silver, Gold = range(3)
@@ -306,7 +340,7 @@ class User(JSONModel):
 	def __str__(self):
 		return str(unicode(self))
 	def __repr__(self):
-		return "<User '%s' (%d) @ %d>" % (self.display_name, self.id, id(self))
+		return "<User '%s' (%d) @ %x>" % (self.display_name, self.id, id(self))
 
 class Privelege(JSONModel):
 	transfer = ('short_description', 'description', 'reputation')
@@ -387,7 +421,6 @@ through here."""
 		self.app_key = app_key
 		self.api_version = '1.1'
 
-		self.use_gzip = True
 		self.impose_throttling = False
 		self.throttle_stop = True
 
@@ -424,7 +457,7 @@ through here."""
 		if self.app_key != None:
 			new_params['app_key'] = self.app_key
 
-		request_properties = dict([(x, getattr(self, x)) for x in ('use_gzip', 'impose_throttling', 'throttle_stop')])
+		request_properties = dict([(x, getattr(self, x)) for x in ('impose_throttling', 'throttle_stop')])
 		request_mgr = WebRequestManager(**request_properties)
 
 		json, info = request_mgr.json_request(url, new_params)
@@ -576,6 +609,16 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 	
 	def search(self, **kw):
 		return self.build('search', Question, 'questions', kw)
+	
+	def tags(self, **kw):
+		return self.build('tags', Tag, 'tags', kw)
+	
+	def tag(self, tag, **kw):
+		kw['filter'] = tag
+		return self.build('tags', Tag, 'tags', kw)[0]
+	
+	def tag_synonyms(self, **kw):
+		return self.build('tags/synonyms', TagSynonym, 'tag_synonyms', kw)
 	
 	def __add__(self, other):
 		if isinstance(other, Site):
