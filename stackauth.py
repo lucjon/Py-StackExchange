@@ -48,11 +48,10 @@ class UserAssociation(JSONModel):
 		return self.on_site.get_site().user(self.id)
 
 class StackAuth(object):
-	def __init__(self, **kw):
+	def __init__(self, domain='stackauth.com'):
 		# There's no reason to change this now, but you
 		# never know.
-		self.domain = kw['domain'] if 'domain' in kw else 'stackauth.com'
-		self.use_gzip = kw['gzip'] if 'gzip' in kw else True
+		self.domain = domain
 	
 	# These methods are slightly more complex than they
 	# could be so they retain rough compatibility with
@@ -62,7 +61,7 @@ class StackAuth(object):
 		return 'http://' + self.domain + '/' + u
 
 	def build(self, url, typ, collection, kw={}):
-		mgr = WebRequestManager(gzip=self.use_gzip)
+		mgr = WebRequestManager()
 		json, info = mgr.json_request(url, kw)
 
 		return JSONMangler.json_to_resultset(self, json, typ, collection, (self, url, typ, collection, kw))
