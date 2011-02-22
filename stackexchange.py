@@ -44,15 +44,15 @@ class Answer(JSONModel):
 		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
 		self.votes = (self.up_vote_count, self.down_vote_count)
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.question_id) + '/' + str(self.id) + '#' + str(self.id)
-	
+
 	def _get_user(self, id):
 		if self._owner is None:
 			self._owner = self.site.user(id)
 		return self._owner
-	
+
 	def _set_user(self, ob):
 		self._owner = ob
-	
+
 	def _get_quest(self, id):
 		if self._question is None:
 			self._question = self.site.question(id)
@@ -60,19 +60,19 @@ class Answer(JSONModel):
 
 	def _set_quest(self, ob):
 		self._question = ob
-	
+
 	question = property(_get_quest, _set_quest)
 	owner = property(_get_user, _set_user)
 
 	def fetch_callback(self, _, site):
 		return site.answer(self.id)
-	
+
 	def __unicode__(self):
 		return u'Answer %d [%s]' % (self.id, self.title)
-	
+
 	def __str__(self):
 		return str(unicode(self))
-	
+
 	def __repr__(self):
 		return '<Answer %d @ %x>' % (self.id, id(self))
 
@@ -97,22 +97,22 @@ class Question(JSONModel):
 
 		if hasattr(json, 'owner'):
 			self.owner_id = json.owner['user_id']
-	
+
 			owner_dict = dict(json.owner)
 			owner_dict['id'] = self.owner_id
 			del owner_dict['user_id']
 			owner_dict['user_type'] = UserType.from_string(owner_dict['user_type'])
-	
+
 			self.owner = User.partial(lambda self: self.site.user(self.id), site, owner_dict)
 
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.id)
-	
+
 	def fetch_callback(self, _, site):
 		return site.question(self.id)
 
 	def linked(self):
 		return self.site.questions(linked_to=self.id)
-	
+
 	def related(self):
 		return self.site.questions(related_to=self.id)
 
@@ -125,20 +125,20 @@ class Comment(JSONModel):
 	transfer = ('post_id', 'score', 'edit_count', 'body')
 	def _extend(self, json, site):
 		self.id = json.comment_id
-		
+
 		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
-		
+
 		if hasattr(json, 'owner'):
 			self.owner_id = json.owner['owner_id'] if 'owner_id' in json.owner else json.owner['user_id']
 			self.owner = User.partial(lambda self: self.site.user(self.id), site, {
-				'id': self.owner_id, 
+				'id': self.owner_id,
 				'user_type': Enumeration.from_string(json.owner['user_type'], UserType),
 				'display_name': json.owner['display_name'],
 				'reputation': json.owner['reputation'],
 				'email_hash': json.owner['email_hash']})
 		else:
 			self.owner = None
-		
+
 		if hasattr(json, 'reply_to'):
 			self.reply_to_user_id = json.reply_to['user_id']
 			self.reply_to = User.partial(lambda self: self.site.user(self.id), site, {
@@ -147,7 +147,7 @@ class Comment(JSONModel):
 				'display_name': json.reply_to['display_name'],
 				'reputation': json.reply_to['reputation'],
 				'email_hash': json.reply_to['email_hash']})
-		
+
 		self.post_type = PostType.from_string(json.post_type)
 
 	def _get_post(self):
@@ -157,9 +157,9 @@ class Comment(JSONModel):
 			return self.site.answer(self.post_id)
 		else:
 			return None
-	
+
 	post = property(_get_post)
-	
+
 	def __unicode__(self):
 		return u'Comment ' + str(self.id)
 	def __str__(self):
@@ -173,7 +173,7 @@ class RevisionType(Enumeration):
 class PostRevision(JSONModel):
 	transfer = ('body', 'comment', 'is_question', 'is_rollback', 'last_body', 'last_title', 'revision_guid',
 				'revision_number', 'title', 'set_community_wiki', 'post_id', 'last_tags', 'tags')
-	
+
 	def _extend(self, json, site):
 		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
 		self.revision_type = RevisionType.from_string(json.revision_type)
@@ -198,7 +198,7 @@ class PostRevision(JSONModel):
 	def _get_post_type(self):
 		return PostType.Question if self.is_question else PostType.Answer
 	post_type = property(_get_post_type)
-	
+
 	def __repr__(self):
 		return '<Revision %d of %s%d>' % (self.revision_number, 'Q' if self.is_question else 'A', self.post_id)
 
@@ -209,7 +209,7 @@ class TagSynonym(JSONModel):
 	def _extend(self, json, site):
 		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
 		self.last_applied_date = datetime.date.fromtimestamp(json.last_applied_date)
-	
+
 	def __repr__(self):
 		return "<TagSynonym '%s'->'%s'>" % (self.from_tag, self.to_tag)
 
@@ -237,13 +237,13 @@ class Period(Enumeration):
 
 class TopUser(JSONModel):
 	transfer = ('score', 'post_count')
-	
+
 	def _extend(self, json, site):
 		user_dict = dict(json.user)
 		user_dict['id'] = user_dict['user_id']
 		del user_dict['user_id']
 		self.user = User.partial(lambda self: self.site.user(self.id), site, user_dict)
-	
+
 	def __repr__(self):
 		return "<TopUser '%s' (score %d)>" % (self.user.display_name, self.score)
 
@@ -255,7 +255,7 @@ class Tag(JSONModel):
 	def _extend(self, json, site):
 		self.synonyms = StackExchangeLazySequence(TagSynonym, None, site, 'tags/%s/synonyms' % self.name, self._up('synonyms'), 'tag_synonyms')
 		self.wiki = StackExchangeLazyObject(TagWiki, site, 'tags/%s/wikis' % self.name, self._up('wiki'), 'tag_wikis')
-	
+
 	def top_askers(self, period, **kw):
 		return self.site.build('tags/%s/top-askers/%s' % (self.name, period), TopUser, 'top_users', kw)
 
@@ -274,7 +274,7 @@ class Badge(JSONModel):
 	def _extend(self, json, site):
 		self.id = json.badge_id
 		self.recipients = StackExchangeLazySequence(User, None, site, json.badges_recipients_url, self._up('recipients'))
-	
+
 	def __str__(self):
 		return self.name
 	def __repr__(self):
@@ -305,11 +305,11 @@ class TimelineEvent(JSONModel):
 
 	def _extend(self, json, site):
 		self.timeline_type = TimelineEventType.from_string(json.timeline_type)
-		
+
 		if self.timeline_type in self._post_related:
 			self.post_type = PostType.from_string(json.post_type)
 			self.creation_date = datetime.date.fromtimestamp(json.creation_date)
-	
+
 	def _get_post(self):
 		if self.timeline_type in self._post_related:
 			if self.post_type == PostType.Question:
@@ -324,7 +324,7 @@ class TimelineEvent(JSONModel):
 			return self.site.comment(self.comment_id)
 		else:
 			return None
-	
+
 	def _get_badge(self):
 		if self.timeline_type == TimelineEventType.Badge:
 			return self.site.badge(name=self.description)
@@ -334,7 +334,7 @@ class TimelineEvent(JSONModel):
 	post = property(_get_post)
 	comment = property(_get_comment)
 	badge = property(_get_badge)
-	
+
 ##############
 
 class PostType(Enumeration):
@@ -415,25 +415,25 @@ class User(JSONModel):
 		self.gold_badges, self.silver_badges, self.bronze_badges = self.badge_counts_t
 		self.badge_total = reduce(operator.add, self.badge_counts_t)
 		self.is_moderator = self.type == UserType.Moderator
-		
+
 		self.url = 'http://' + self.site.root_domain + '/users/' + str(self.id)
-	
+
 	def has_privelege(self, privelege):
 		return self.reputation >= privelege.reputation
-	
+
 	def _get_real_tag(self, tag):
 		return tag.name if isinstance(tag, Tag) else tag
 
 	def top_answers_in_tag(self, tag, **kw):
 		return self.site.build('users/%d/tags/%s/top-answers' % (self.id, self._get_real_tag(tag)), Answer, 'answers', kw)
-	
+
 	def top_questions_in_tag(self, tag, **kw):
 		return self.site.build('users/%d/tags/%s/top-questions' % (self.id, self._get_real_tag(tag)), Question, 'questions', kw)
-	
+
 	def comments_to(self, user, **kw):
 		uid = user.id if isinstance(user, User) else user
 		return self.site.build('users/%d/comments/%d' % (self.id, uid), Comment, 'comments' ,kw)
-	
+
 	def __unicode__(self):
 		return 'User %d [%s]' % (self.id, self.display_name)
 	def __str__(self):
@@ -456,10 +456,10 @@ class QuestionsQuery(object):
 			kw['body'] = 'true'
 		if self.site.include_comments:
 			kw['comments'] = 'true'
-	
+
 	def __call__(self, ids=None, user_id=None, **kw):
 		self.check(kw)
-		
+
 		# Compatibility hack, as user_id= was in versions below v1.1
 		if ids is None and user_id is not None:
 			return self.by_user(user_id, **kw)
@@ -467,7 +467,7 @@ class QuestionsQuery(object):
 			return self.site.build('questions', Question, 'questions', kw)
 		else:
 			return self.site._get(Question, ids, 'questions', kw)
-	
+
 	def linked_to(self, qn, **kw):
 		self.check(kw)
 		url = 'questions/%s/linked' % self.site.vectorise(qn, Question)
@@ -477,21 +477,21 @@ class QuestionsQuery(object):
 		self.check(kw)
 		url = 'questions/%s/related' % self.site.vectorise(qn, Question)
 		return self.site.build(url, Question, 'questions', kw)
-	
+
 	def by_user(self, usr, **kw):
 		self.check(kw)
 		kw['user_id'] = usr
 		return self.site._user_prop('questions', Question, 'questions', kw)
-	
+
 	def unanswered(self, by=None, **kw):
 		self.check(kw)
-		
+
 		if by is None:
 			return self.site.build('questions/unanswered', Question, 'questions', kw)
 		else:
 			kw['user_id'] = by
 			return self.site._user_prop('questions/unanswered', Question, 'questions', kw)
-	
+
 	def no_answers(self, by=None, **kw):
 		self.check(kw)
 
@@ -500,12 +500,12 @@ class QuestionsQuery(object):
 		else:
 			kw['user_id'] = by
 			return self.site._user_prop('questions/no-answers', Question, 'questions', kw)
-	
+
 	def unaccepted(self, by, **kw):
 		self.check(kw)
 		kw['user_id'] = by
 		return self.site._user_prop('questions/unaccepted', Questions, 'questions', kw)
-	
+
 	def favorited_by(self, by, **kw):
 		self.check(kw)
 		kw['user_id'] = by
@@ -534,7 +534,7 @@ through here."""
 		Comment: 'comments/%s',
 		Question: 'questions/%s',
 	}
-	
+
 	def _kw_to_str(self, ob):
 		try:
 			if isinstance(ob, datetime.datetime):
@@ -554,19 +554,19 @@ through here."""
 		for k, v in params.iteritems():
 			new_params[k] = self._kw_to_str(v)
 		if self.app_key != None:
-			new_params['app_key'] = self.app_key
+			new_params['key'] = self.app_key
 
 		request_properties = dict([(x, getattr(self, x)) for x in ('impose_throttling', 'throttle_stop')])
 		request_mgr = WebRequestManager(**request_properties)
 
 		json, info = request_mgr.json_request(url, new_params)
-		
+
 		self.rate_limit = (int(info.getheader('X-RateLimit-Current')), int(info.getheader('X-RateLimit-Max')))
 		self.requests_used = self.rate_limit[1] - self.rate_limit[0]
 		self.requests_left = self.rate_limit[0]
 
 		return json
-	
+
 	def _user_prop(self, qs, typ, coll, kw, prop='user_id'):
 		if prop not in kw:
 			raise LookupError('No user ID provided.')
@@ -589,7 +589,7 @@ through here."""
 
 		json = self._request(url, kw)
 		return JSONMangler.json_to_resultset(self, json, typ, collection, (self, url, typ, collection, kw))
-		
+
 	def build_from_snippet(self, json, typ):
 		return StackExchangeResultSet([typ(x, self) for x in json])
 
@@ -615,11 +615,11 @@ through here."""
 		"""Retrieves an object representing the user with the ID `nid`."""
 		u, = self.users((nid,), **kw)
 		return u
-	
+
 	def users(self, ids, **kw):
 		"""Retrieves a list of the users with the IDs specified in the `ids' parameter."""
 		return self._get(User, ids, 'users', kw)
-	
+
 	def moderators(self, **kw):
 		"""Retrieves a list of the moderators on the site."""
 		return self.build('users/moderators', User, 'users', kw)
@@ -628,7 +628,7 @@ through here."""
 		"""Retrieves an object describing the answer with the ID `nid`."""
 		a, = self.answers((nid,), **kw)
 		return a
-	
+
 	def answers(self, ids=None, **kw):
 		"""Retrieves a set of the answers with the IDs specified in the 'ids' parameter, or by the
 		user_id specified."""
@@ -654,29 +654,29 @@ through here."""
 				return self.build(url, Comment, 'comments', kw)
 		else:
 			return self.build('comments/%s' % self.vectorise(ids), Comment, 'comments', kw)
-	
+
 	def question(self, nid, **kw):
 		"""Retrieves an object representing a question with the ID `nid`. Note that an answer ID can not be specified -
 unlike on the actual site, you will receive an error rather than a redirect to the actual question."""
 		q, = self.questions((nid,), **kw)
 		return q
-	
+
 	questions = property(lambda s: QuestionsQuery(s))
-	
+
 	def recent_questions(self, **kw):
 		"""Returns the set of the most recent questions on the site, by last activity."""
 		if 'answers' not in kw:
 			kw['answers'] = 'true'
 		return self.build('questions', Question, 'questions', kw)
-	
+
 	def users_with_badge(self, bid, **kw):
 		"""Returns the set of all the users who have been awarded the badge with the ID 'bid'."""
 		return self.build('badges/' + str(bid), User, 'users', kw)
-	
+
 	def all_badges(self, **kw):
 		"""Returns the set of all the badges which can be awarded on the site, excluding those which are awarded for specific tags."""
 		return self.build('badges', Badge, 'badges', kw)
-	
+
 	def badges(self, ids=None, **kw):
 		"""Returns the users with the badges with IDs."""
 		if ids == None:
@@ -696,7 +696,7 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 				if badge.name == name:
 					return badge
 			return None
-	
+
 	def priveleges(self):
 		"""Returns all the priveleges a user can have on the site."""
 		return self.build('priveleges', Privelege, 'priveleges', kw)
@@ -704,15 +704,15 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 	def all_nontag_badges(self, **kw):
 		"""Returns the set of all badges which are not tag-based."""
 		return self.build('badges/name', Badge, 'badges', kw)
-	
+
 	def all_tag_badges(self, **kw):
 		"""Returns the set of all the tag-based badges: those which are awarded for performance on a specific tag."""
 		return self.build('badges/tags', Badge, 'badges', kw)
-	
+
 	def all_tags(self, **kw):
 		'''Returns the set of all tags on the site.'''
 		return self.build('tags', Tag, 'tags', kw)
-	
+
 	def stats(self, **kw):
 		'''Returns statistical information on the site, such as number of questions.'''
 		return self.build('stats', Statistics, 'statistics', kw)[0]
@@ -723,10 +723,10 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 
 	def revisions(self, post, **kw):
 		return self.build('revisions/' + self.vectorise(post, (Question, Answer)), PostRevision, 'revisions', kw)
-	
+
 	def search(self, **kw):
 		return self.build('search', Question, 'questions', kw)
-	
+
 	def similar(self, title, tagged=None, nottagged=None, **kw):
 		if 'answers' not in kw:
 			kw['answers'] = True
@@ -740,14 +740,14 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 
 	def tags(self, **kw):
 		return self.build('tags', Tag, 'tags', kw)
-	
+
 	def tag(self, tag, **kw):
 		kw['filter'] = tag
 		return self.build('tags', Tag, 'tags', kw)[0]
-	
+
 	def tag_synonyms(self, **kw):
 		return self.build('tags/synonyms', TagSynonym, 'tag_synonyms', kw)
-	
+
 	def __add__(self, other):
 		if isinstance(other, Site):
 			return CompositeSite(self, other)
@@ -764,7 +764,7 @@ class CompositeSite(object):
 			def handle(*ps, **kws):
 				res1 = getattr(self.site_one, a)(*ps, **kws)
 				res2 = getattr(self.site_two, a)(*ps, **kws)
-				
+
 				if hasattr(res1, '__iter__') and hasattr(res2, '__iter__'):
 					return res1 + res2
 				else:
@@ -773,7 +773,7 @@ class CompositeSite(object):
 			return handle
 		else:
 			raise AttributeError(a)
-	
+
 	def __sub__(self, other):
 		if other is self.site_one:
 			return self.site_two
