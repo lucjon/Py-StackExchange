@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
 	name = 'py-stackexchange',
-	py_modules = ['stackexchange', 'stackcore', 'stackauth', 'stackweb'],
+	py_modules = ['stackexchange', 'stackcore', 'stackauth', 'stackweb', 'stacksites'],
 	version = '1.1-1',
 	description = 'A Python binding to the StackExchange (Stack Overflow, Server Fault, etc.) website APIs.',
 	author = 'Lucas Jones',

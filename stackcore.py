@@ -125,6 +125,8 @@ to the initial function which created the resultset."""
 	def fetch(self):
 		# Do nothing, but allow multiple fetch calls
 		return self
+	
+	done = property(lambda s: len(s) == s.total)
 
 class NeedsAwokenError(Exception):
 	"""An error raised when an attempt is made to access a property of a lazy collection that requires the data to have been fetched,
