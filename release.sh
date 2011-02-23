@@ -1,3 +1,7 @@
+#!/bin/bash
+echo "Please don't run this as a user. This generates a new release for PyPI. Press ^C to exit or Enter to continue."
+read
+
 # Clear old distutils stuff
 rm -rf build dist MANIFEST &> /dev/null
 # Re-generate site constants
