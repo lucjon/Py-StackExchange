@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
 	name = 'py-stackexchange',
 	py_modules = ['stackexchange', 'stackcore', 'stackauth', 'stackweb'],
-	version = '1.1',
+	version = '1.1-1',
 	description = 'A Python binding to the StackExchange (Stack Overflow, Server Fault, etc.) website APIs.',
 	author = 'Lucas Jones',
 	author_email = 'lucas@lucasjones.co.uk',
@@ -21,5 +21,7 @@ setup(
 		'Topic :: Software Development :: Libraries :: Python Modules',
 		'Topic :: Internet',
 	],
-	long_description = 'Please see http://stackapps.com/questions/198/py-stackexchange-an-api-wrapper-for-python for a full description.'
+	long_description = '''Update: fixed critical app_key bug. 
+
+Please see http://stackapps.com/questions/198/py-stackexchange-an-api-wrapper-for-python for a full description.'''
 )
