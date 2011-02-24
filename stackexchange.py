@@ -515,13 +515,14 @@ class Site(object):
 	"""Stores information and provides methods to access data on a StackExchange site. This class is the 'root' of the API - all data is accessed
 through here."""
 
-	def __init__(self, domain, app_key=None):
+	def __init__(self, domain, app_key=None, cache=180):
 		self.domain = domain
 		self.app_key = app_key
 		self.api_version = '1.1'
 
 		self.impose_throttling = False
 		self.throttle_stop = True
+		self.cache_options = {'cache': False} if cache == 0 else {'do_cache': True, 'cache_age': cache}
 
 		self.include_body = False
 		self.include_comments = False
@@ -557,6 +558,7 @@ through here."""
 			new_params['key'] = self.app_key
 
 		request_properties = dict([(x, getattr(self, x)) for x in ('impose_throttling', 'throttle_stop')])
+		request_properties.update(self.cache_options)
 		request_mgr = WebRequestManager(**request_properties)
 
 		json, info = request_mgr.json_request(url, new_params)
