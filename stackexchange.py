@@ -603,8 +603,10 @@ through here."""
 			return ';'.join([str(x) for x in lst])
 		elif allowed_types is not None and [isinstance(lst, type) for type in allowed_types] and hasattr(lst, 'id'):
 			return str(lst.id)
+		elif isinstance(lst, str):
+			return lst
 		else:
-			return str(lst)
+			return str(lst).lower()
 
 	def _get(self, typ, ids, coll, kw):
 		root = self.URL_Roots[typ] % self.vectorise(ids)
