@@ -515,7 +515,7 @@ class Site(object):
 	"""Stores information and provides methods to access data on a StackExchange site. This class is the 'root' of the API - all data is accessed
 through here."""
 
-	def __init__(self, domain, app_key=None, cache=180):
+	def __init__(self, domain, app_key=None, cache=1800):
 		self.domain = domain
 		self.app_key = app_key
 		self.api_version = '1.1'
