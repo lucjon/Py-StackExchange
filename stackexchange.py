@@ -522,7 +522,7 @@ through here."""
 
 		self.impose_throttling = False
 		self.throttle_stop = True
-		self.cache_options = {'cache': False} if cache == 0 else {'do_cache': True, 'cache_age': cache}
+		self.cache_options = {'cache': False} if cache == 0 else {'cache': True, 'cache_age': cache}
 
 		self.include_body = False
 		self.include_comments = False
