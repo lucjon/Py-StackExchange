@@ -602,7 +602,7 @@ through here."""
 			allowed_types = (allowed_types, )
 
 		if hasattr(lst, '__iter__'):
-			return ';'.join([str(x) for x in lst])
+			return ';'.join([self.vectorise(x, or_of_type) for x in lst])
 		elif allowed_types is not None and [isinstance(lst, type) for type in allowed_types] and hasattr(lst, 'id'):
 			return str(lst.id)
 		elif isinstance(lst, str):
