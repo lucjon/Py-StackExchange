@@ -1,10 +1,14 @@
-import stackexchange, unittest
+import stackexchange, unittest, stacksites
 
 QUESTION_ID = 4
 ANSWER_ID = 98
 
 def _setUp(self):
+<<<<<<< HEAD
 	self.site = stackexchange.Site(stackexchange.StackOverflow)
+=======
+	self.site = stackexchange.Site(stackexchange.StackOverflow, '1_9Gj-egW0q_k1JaweDG8Q')
+>>>>>>> fba047ea76cb6ea03d83648bfe7ebd30d2e5d954
 
 class DataTests(unittest.TestCase):
 	def setUp(self):
@@ -29,15 +33,24 @@ class DataTests(unittest.TestCase):
 class PlumbingTests(unittest.TestCase):
 	def setUp(self):
 		_setUp(self)
-
+	
 	def test_key_ratelimit(self):
-		q = self.site.question(QUESTION_ID, body=True)
-		self.assertTrue(self.site.rate_limit is not None)
-
+		# a key was given, so check the rate limit is 10000
+		if not hasattr(self.site, 'rate_limit'):
+			self.site.question(QUESTION_ID)
+		self.assertTrue(self.site.rate_limit[1] == 10000)
+	
+	def test_site_constants(self):
+		# SOFU should always be present
+		self.assertTrue(hasattr(stacksites, 'StackOverflow'))
+		self.assertTrue(hasattr(stacksites, 'ServerFault'))
+		self.assertTrue(hasattr(stacksites, 'SuperUser'))
+	
 	def test_vectorise(self):
+		# check different types
 		q = self.site.question(QUESTION_ID)
-		v = self.site.vectorise((q, 100, '200'), or_of_type=stackexchange.Question)
-		self.assertEqual(v, '4;100;200')
+		v = self.site.vectorise(('hello', 10, True, False, q), stackexchange.Question)
+		self.assertEqual(v, 'hello;10;true;false;%d' % QUESTION_ID)
 
 if __name__ == '__main__':
 	unittest.main()
