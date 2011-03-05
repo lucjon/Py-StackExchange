@@ -1,9 +1,9 @@
 import datetime, operator, time, urllib
-from stackweb import WebRequestManager
-from stackcore import *
+from stackexchange.web import WebRequestManager
+from stackexchange.core import *
 
 # Site constants
-from stacksites import *
+from stackexchange.sites import *
 
 ##### Statistics    ###
 class Statistics(JSONModel):
@@ -602,8 +602,8 @@ through here."""
 			allowed_types = (allowed_types, )
 
 		if hasattr(lst, '__iter__'):
-			return ';'.join([str(x) for x in lst])
-		elif allowed_types is not None and [isinstance(lst, type) for type in allowed_types] and hasattr(lst, 'id'):
+			return ';'.join([self.vectorise(x, or_of_type) for x in lst])
+		elif allowed_types is not None and any([isinstance(lst, typ) for typ in allowed_types]) and hasattr(lst, 'id'):
 			return str(lst.id)
 		elif isinstance(lst, str):
 			return lst

@@ -1,7 +1,7 @@
 # stackauth.py - Implements basic StackAuth support for Py-StackExchange
 
-from stackweb import WebRequestManager
-from stackcore import *
+from stackexchange.web import WebRequestManager
+from stackexchange.core import *
 from stackexchange import Site, User, UserType
 import re
 
