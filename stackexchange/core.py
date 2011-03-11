@@ -89,8 +89,9 @@ class StackExchangeResultset(tuple):
 to fetch the next page."""
 
 	def __new__(cls, items, page, pagesize, build_info):
-		cls.page, cls.pagesize, cls.build_info = page, pagesize, build_info
-		return tuple.__new__(cls, items)
+		instance = tuple.__new__(cls, items)
+		instance.page, instance.pagesize, instance.build_info = page, pagesize, build_info
+		return instance
 	
 	def reload(self):
 		"""Refreshes the data in the resultset with fresh API data. Note that this doesn't work with extended resultsets."""

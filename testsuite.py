@@ -1,14 +1,11 @@
-import stackexchange, unittest, stacksites
+import stackexchange, unittest
+import stackexchange.sites as stacksites
 
 QUESTION_ID = 4
 ANSWER_ID = 98
 
 def _setUp(self):
-<<<<<<< HEAD
-	self.site = stackexchange.Site(stackexchange.StackOverflow)
-=======
 	self.site = stackexchange.Site(stackexchange.StackOverflow, '1_9Gj-egW0q_k1JaweDG8Q')
->>>>>>> fba047ea76cb6ea03d83648bfe7ebd30d2e5d954
 
 class DataTests(unittest.TestCase):
 	def setUp(self):
@@ -51,6 +48,32 @@ class PlumbingTests(unittest.TestCase):
 		q = self.site.question(QUESTION_ID)
 		v = self.site.vectorise(('hello', 10, True, False, q), stackexchange.Question)
 		self.assertEqual(v, 'hello;10;true;false;%d' % QUESTION_ID)
+	
+	def test_resultset_independence(self):
+		# repro code for bug #4 (thanks, beaumartinez!)
+
+		# Create two different sites.
+		a = stackexchange.Site('api.askubuntu.com')
+		b = self.site
+
+		# Create two different searches from the different sites.
+		a_search = a.search(intitle='vim', pagesize=100)
+		b_search = b.search(intitle='vim', pagesize=100)
+
+		# (We demonstrate that the second search has a second page.)
+		self.assertEqual(len(b_search.fetch_next()), 100)
+
+		# Reset the searches.
+		a_search = a.search(intitle='vim', pagesize=100)
+		b_search = b.search(intitle='vim', pagesize=100)
+		
+		# Exhaust the first search.
+		while len(a_search) > 0:
+			    a_search = a_search.fetch_next()
+	
+		# Try get the next page of the second search. It will be empty.
+		# Here's the bug.
+		self.assertEqual(len(b_search.fetch_next()), 100)
 
 if __name__ == '__main__':
 	unittest.main()
