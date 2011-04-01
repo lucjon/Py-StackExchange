@@ -1,4 +1,13 @@
-from distutils.core import setup
+# Setuptools is required for the use_2to3 option below. You should install it
+# from the Distribute home page, http://packages.python.org/distribute/
+import sys
+from setuptools import setup
+
+options = {}
+if sys.version_info > (3, 0):
+    # Automatically run 2to3 when installing under Python 3
+    options['use_2to3'] = True
+
 
 setup(
 	name = 'py-stackexchange',
@@ -13,6 +22,8 @@ setup(
 	classifiers = [
 		'Programming Language :: Python',
 		'Programming Language :: Python :: 2.6',
+		'Programming Language :: Python :: 2.7',
+		'Programming Language :: Python :: 3',
 		'Development Status :: 4 - Beta',
 		'Environment :: Other Environment',
 		'Intended Audience :: Developers',
@@ -23,5 +34,6 @@ setup(
 	],
 	long_description = '''Update: a bug-fix release.
 
-Please see http://stackapps.com/questions/198/py-stackexchange-an-api-wrapper-for-python for a full description.'''
+Please see http://stackapps.com/questions/198/py-stackexchange-an-api-wrapper-for-python for a full description.''',
+        **options
 )
