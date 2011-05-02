@@ -620,9 +620,13 @@ through here."""
 		u, = self.users((nid,), **kw)
 		return u
 
-	def users(self, ids, **kw):
+	def users(self, ids=[], **kw):
 		"""Retrieves a list of the users with the IDs specified in the `ids' parameter."""
 		return self._get(User, ids, 'users', kw)
+	
+	def users_by_name(self, name, **kw):
+		kw['filter'] = name
+		return self.users(**kw)
 
 	def moderators(self, **kw):
 		"""Retrieves a list of the moderators on the site."""
