@@ -553,7 +553,11 @@ through here."""
 
 		new_params = {}
 		for k, v in params.iteritems():
-			new_params[k] = self._kw_to_str(v)
+			if k in ('fromdate', 'todate'):
+				# bit of a HACKish workaround for a reported issue; force to an integer
+				new_params[k] = str(int(v))
+			else:
+				new_params[k] = self._kw_to_str(v)
 		if self.app_key != None:
 			new_params['key'] = self.app_key
 
