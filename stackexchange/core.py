@@ -91,6 +91,7 @@ to fetch the next page."""
 	def __new__(cls, items, page, pagesize, build_info):
 		instance = tuple.__new__(cls, items)
 		instance.page, instance.pagesize, instance.build_info = page, pagesize, build_info
+		instance.items = items
 		return instance
 	
 	def reload(self):
@@ -126,6 +127,20 @@ to the initial function which created the resultset."""
 	def fetch(self):
 		# Do nothing, but allow multiple fetch calls
 		return self
+	
+	def __iter__(self):
+		return self.next()
+
+	def next(self):
+		current = self
+		while not current.done:
+			for obj in current.items:
+				yield obj
+			
+			try:
+				current = current.fetch_next()
+			except urllib2.HTTPError:
+				return
 	
 	done = property(lambda s: len(s) == s.total)
 
