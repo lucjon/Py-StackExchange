@@ -34,7 +34,7 @@ class Answer(JSONModel):
 			self.owner_id = json.owner['user_id']
 			self.owner_info = tuple(json.owner.values())
 
-		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 
 		if hasattr(json, 'last_edit_date'):
 			self.last_edit_date = datetime.date.fromtimestamp(json.last_edit_date)
@@ -126,7 +126,7 @@ class Comment(JSONModel):
 	def _extend(self, json, site):
 		self.id = json.comment_id
 
-		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 
 		if hasattr(json, 'owner'):
 			self.owner_id = json.owner['owner_id'] if 'owner_id' in json.owner else json.owner['user_id']
@@ -175,7 +175,7 @@ class PostRevision(JSONModel):
 				'revision_number', 'title', 'set_community_wiki', 'post_id', 'last_tags', 'tags')
 
 	def _extend(self, json, site):
-		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 		self.revision_type = RevisionType.from_string(json.revision_type)
 
 		part = json.user
@@ -207,7 +207,7 @@ class TagSynonym(JSONModel):
 	transfer = ('from_tag', 'to_tag', 'applied_count')
 
 	def _extend(self, json, site):
-		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 		self.last_applied_date = datetime.date.fromtimestamp(json.last_applied_date)
 
 	def __repr__(self):
@@ -308,7 +308,7 @@ class TimelineEvent(JSONModel):
 
 		if self.timeline_type in self._post_related:
 			self.post_type = PostType.from_string(json.post_type)
-			self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+			self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 
 	def _get_post(self):
 		if self.timeline_type in self._post_related:
@@ -377,7 +377,7 @@ class User(JSONModel):
 	def _extend(self, json, site):
 		self.id = json.user_id
 		self.type = Enumeration.from_string(json.user_type, UserType)
-		self.creation_date = datetime.date.fromtimestamp(json.creation_date)
+		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 		self.last_access_date = datetime.date.fromtimestamp(json.last_access_date)
 		self.reputation = FormattedReputation(json.reputation)
 
@@ -553,7 +553,11 @@ through here."""
 
 		new_params = {}
 		for k, v in params.iteritems():
-			new_params[k] = self._kw_to_str(v)
+			if k in ('fromdate', 'todate'):
+				# bit of a HACKish workaround for a reported issue; force to an integer
+				new_params[k] = str(int(v))
+			else:
+				new_params[k] = self._kw_to_str(v)
 		if self.app_key != None:
 			new_params['key'] = self.app_key
 
@@ -620,9 +624,13 @@ through here."""
 		u, = self.users((nid,), **kw)
 		return u
 
-	def users(self, ids, **kw):
+	def users(self, ids=[], **kw):
 		"""Retrieves a list of the users with the IDs specified in the `ids' parameter."""
 		return self._get(User, ids, 'users', kw)
+	
+	def users_by_name(self, name, **kw):
+		kw['filter'] = name
+		return self.users(**kw)
 
 	def moderators(self, **kw):
 		"""Retrieves a list of the moderators on the site."""
