@@ -701,9 +701,9 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 					return badge
 			return None
 
-	def priveleges(self):
-		"""Returns all the priveleges a user can have on the site."""
-		return self.build('priveleges', Privelege, 'priveleges', kw)
+	def privileges(self):
+		"""Returns all the privileges a user can have on the site."""
+		return self.build('privileges', Privelege, 'privileges', kw)
 
 	def all_nontag_badges(self, **kw):
 		"""Returns the set of all badges which are not tag-based."""

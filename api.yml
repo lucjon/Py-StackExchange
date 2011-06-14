@@ -1,0 +1,247 @@
+answers:
+    answers:
+        se_route: /answers
+        description: Get all answers on the site.
+
+        function: Site.answers
+        returns: ResultSet <Answer>
+    
+    answers_id:
+        se_route: /answers/{id}
+        description: Get the answer identified by the specified ID.
+
+        function: Site.answer
+        parameters:
+            id: The ID of the specified answer.
+        returns: Answer
+
+    answers_ids:
+        se_route: /answers/{ids}
+        description: Get the answers identified by the specified IDs.
+
+        function: Site.answers
+        parameters:
+            ids: One or more IDs in a Python iterable.
+        returns: ResultSet <Answer>
+        
+        example:
+            so.answers([1, 2, 3])
+    
+    answers_comments:
+        se_route: /answers/{ids}/comments
+        
+        see: comments.posts_comments
+
+badges:
+    badges:
+        se_route: /badges
+        description: Get all badges on the site, in alphabetical order.
+
+        function: Site.all_badges
+        returns: ResultSet <Badge>
+    
+    badges_id:
+        se_route: /badges/{id}
+        description: Get all users who have been awarded the badge specified by ID.
+
+        function: Site.users_with_badge
+        parameters:
+            id: The ID of the badge.
+
+        returns: Badge
+
+    badges_ids:
+        se_route: /badges/{ids}
+        description: Get all users who have been awarded any of the badges specified in IDs.
+
+        function: Site.badges
+        parameters:
+            ids: One or more badge IDs in an iterable.
+
+        returns: ResultSet <Badge>
+    
+    badge_by_id:
+        description: Get a badge object for the specified ID.
+
+        function: Site.badge
+        parameters:
+            nid: The ID of the badge.
+
+        returns: Badge
+    
+    badge_by_name:
+        description: Get a Badge object for the badge with the specified name.
+
+        function: Site.badge
+        parameters:
+            name: (Keyword parameter) The name of the badge.
+
+        returns: Badge
+    
+    badges_non_tag:
+        se_route: /badges/name
+        description: Get all non-tagged-based badges in alphabetical order.
+
+        function: Site.all_nontag_badges
+        returns: ResultSet <Badge>
+
+    badges_tags:
+        se_route: /badges/tags
+        description: Get all tag-based badges.
+
+        function: Site.all_tag_badges
+        returns: ResultSet <Badge>
+    
+comments:
+    comments:
+        se_route: /comments
+        description: Get all comments on the site.
+
+        function: Site.comments
+        returns: ResultSet <Comment>
+    
+    comments_ids:
+        se_route: /comments/{ids}
+        description: Get comments identified by a set of IDs.
+
+        function: Site.comments
+        parameters:
+            ids: (Keyword parameter) The IDs of the comments to request.
+
+        returns: ResultSet <Comment>
+    
+    posts_comments:
+        se_route: /posts/{ids}/comments
+        description: Get comments on the posts (question or answer) identified by a set of IDs. 
+
+        function: Site.comments
+        parameters:
+            posts: (Keyword parameter) The IDs of the posts whose comments are to be requested.
+        returns: ResultSet <Comment>
+
+errors:
+    error:
+        se_route: /errors/{id}
+        unimplemented: True
+
+privileges:
+    privileges:
+        se_route: /privileges
+        description: Get all the privileges available on the site. 
+
+        function: Site.privileges
+        returns: ResultSet <Privelege>
+
+questions:
+    questions:
+        se_route: /questions
+        description: Get all questions on the site.
+
+        function: Site.questions
+        returns: ResultSet <Question>
+    
+    questions_ids:
+        se_route: /questions/{ids}
+        description: Get the questions identified by IDs.
+
+        function: Site.questions
+        parameters:
+            ids: (Keyword parameter) The IDs of the questions to request.
+
+        returns: ResultSet <Question>
+
+    questions_ids_answers:
+        se_route: /questions/{ids}/answers
+        description: Get the answers of the questions identified by IDs.
+        
+        unimplemented: True
+
+    questions_comments:
+        se_route: /questions/{ids}/comments
+        description: Get comments on the questions identified by IDs.
+
+        function: Site.comments
+        parameters:
+            posts: (Keyword parameter) The IDs of the questions whose comments to request.
+
+        returns: ResultSet <Comment>
+
+    questions_linked:
+        se_route: /questions/{ids}/linked
+        description: Get the questions that link to the questions identified by a set of IDs.
+
+        function: Site.questions.linked_to
+        parameters:
+            qn: The ID, or a list of IDs, of the question whose linked questions should be retrieved.
+
+        returns: ResultSet <Question>
+
+    questions_related:
+        se_route: /questions/{ids}/related
+        description: Get questions related to the questions specified by IDs.
+
+        function: Site.questions.related_to
+        parameters:
+            qn: The ID, or a list of IDs, of the question whose related questions should be retrieved.
+
+        returns: ResultSet <Question>
+
+    questions_timeline:
+        se_route: /questions/{ids}/timeline
+        description: Get the timelines of the questions identified by IDs.
+
+        unimplemented: True
+    
+    questions_unanswered:
+        se_route: /questions/unanswered
+        description: Gets all unanswered questions.
+
+        function: Site.questions.unanswered
+        returns: ResultSet <Question>
+
+    questions_no_answers:
+        se_route: /questions/no-answers
+        description: Get all the questions on the site with no answers.
+
+        function: Site.questions.no_answers
+        returns: ResultSet <Question>
+
+revisions:
+    revisions_post:
+        se_route: /revisions/{id}
+        description: Get all revisions for the post with the specified ID.
+
+        function: Site.revisions
+        parameters:
+            post: The post or post ID whose revisions are to be requested.
+        returns: ResultSet <Revision>
+
+    revision:
+        se_route: /revisions/{id}/{revision-guid}
+        description: Get a specific revision identified by a post ID a revision GUID. 
+
+        function: Site.revision
+        parameters:
+            post: The post or post ID whose revisions are to be requested.
+            guid: The GUID of the specific revision to request.
+
+search:
+    search:
+        se_route: /search
+        description: Search the site.
+
+        parameters:
+            
+
+
+__style__: |
+    h1, h2, h3, h4 { font-family: Palatino, Palatino Linotype, TeXGyrePagella, serif; }
+    body { font-family: Gill Sans, GillSans, Gill Sans MT, Arial, Helvetica, sans-serif; }
+    .description { font-size: 1.1em; }
+    .prototype, .returns span, .example { font-family: Monaco, Consolas, monospace; background-color: #EEE; padding: 4px; margin: 3px; }
+    .api { text-indent: 2em; }
+    .param_name { font-style: italic; padding-right: 10px; }
+    .returns { font-weight: bold; }
+    .returns span { font-weight: normal; }
+    .example, .params { text-indent: 3.5em; }
+    .see { font-style: italic; }
