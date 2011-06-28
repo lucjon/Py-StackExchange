@@ -83,6 +83,8 @@ class Question(JSONModel):
 	def _extend(self, json, site):
 		self.id = json.question_id
 
+		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
+
 		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.question_timeline_url, self._up('timeline'))
 		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
 
