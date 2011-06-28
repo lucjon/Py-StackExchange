@@ -84,6 +84,7 @@ class Question(JSONModel):
 		self.id = json.question_id
 
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
+		self.vote_count = self.up_vote_count - self.down_vote_count 
 
 		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.question_timeline_url, self._up('timeline'))
 		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
