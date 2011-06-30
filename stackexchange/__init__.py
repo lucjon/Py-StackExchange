@@ -86,10 +86,12 @@ class Question(JSONModel):
 		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.question_timeline_url, self._up('timeline'))
 		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
 
+		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 		self.comments_url = json.question_comments_url
 		self.comments = StackExchangeLazySequence(Comment, None, site, self.comments_url, self._up('comments'))
 
 		self.answers_url = json.question_answers_url
+
 		if hasattr(json, 'answers'):
 			self.answers = [Answer(x, site) for x in json.answers]
 		else:

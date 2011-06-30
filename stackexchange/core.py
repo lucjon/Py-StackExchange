@@ -132,11 +132,14 @@ to the initial function which created the resultset."""
 		return self.next()
 
 	def next(self):
+		for obj in self.items:
+			yield obj
+
 		current = self
 		while not current.done:
 			for obj in current.items:
 				yield obj
-			
+
 			try:
 				current = current.fetch_next()
 			except urllib2.HTTPError:
