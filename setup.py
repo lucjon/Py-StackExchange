@@ -12,7 +12,7 @@ if sys.version_info > (3, 0):
 setup(
 	name = 'py-stackexchange',
 	py_modules = ['stackexchange.core', 'stackexchange.sites', 'stackexchange.web', 'stackauth'],
-	version = '1.1-3',
+	version = '1.1-4',
 	description = 'A Python binding to the StackExchange (Stack Overflow, Server Fault, etc.) website APIs.',
 	author = 'Lucas Jones',
 	author_email = 'lucas@lucasjones.co.uk',
