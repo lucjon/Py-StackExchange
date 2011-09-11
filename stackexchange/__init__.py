@@ -542,7 +542,7 @@ through here."""
 		try:
 			if isinstance(ob, datetime.datetime):
 				return str(time.mktime(ob.timetuple()))
-			elif isinstance(ob, str):
+			elif isinstance(ob, basestring):
 				return ob
 			else:
 				i = iter(ob)
@@ -611,7 +611,7 @@ through here."""
 			return ';'.join([self.vectorise(x, or_of_type) for x in lst])
 		elif allowed_types is not None and any([isinstance(lst, typ) for typ in allowed_types]) and hasattr(lst, 'id'):
 			return str(lst.id)
-		elif isinstance(lst, str):
+		elif isinstance(lst, basestring):
 			return lst
 		else:
 			return str(lst).lower()
