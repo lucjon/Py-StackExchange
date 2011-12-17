@@ -32,14 +32,14 @@ class JSONModel(object):
 				raise ValueError('Supplied fetch callback did not return a usable value.')
 		else:
 			return False
-	
+
 	# Allows the easy creation of updateable, partial classes
 	@classmethod
 	def partial(cls, fetch_callback, site, populate):
 		"""Creates a partial description of the API object, with the proviso that the full set of data can be fetched later."""
 
 		model = cls({}, site, True)
-		
+
 		for k, v in populate.iteritems():
 			setattr(model, k, v)
 
@@ -93,7 +93,7 @@ to fetch the next page."""
 		instance.page, instance.pagesize, instance.build_info = page, pagesize, build_info
 		instance.items = items
 		return instance
-	
+
 	def reload(self):
 		"""Refreshes the data in the resultset with fresh API data. Note that this doesn't work with extended resultsets."""
 		# kind of a cheat, but oh well
@@ -107,7 +107,7 @@ to the initial function which created the resultset."""
 		new_params[4].update(kw)
 		new_params[4]['page'] = page
 		return new_params[0].build(*new_params[1:])
-	
+
 	def fetch_extended(self, page):
 		"""Returns a new resultset containing data from this resultset AND from the specified page."""
 		next = self.fetch_page(page)
@@ -119,15 +119,15 @@ to the initial function which created the resultset."""
 	def fetch_next(self):
 		"""Returns the resultset of the data in the next page."""
 		return self.fetch_page(self.page + 1)
-	
+
 	def extend_next(self):
 		"""Returns a new resultset containing data from this resultset AND from the next page."""
 		return self.fetch_extended(self.page + 1)
-	
+
 	def fetch(self):
 		# Do nothing, but allow multiple fetch calls
 		return self
-	
+
 	def __iter__(self):
 		return self.next()
 
@@ -142,9 +142,11 @@ to the initial function which created the resultset."""
 
 			try:
 				current = current.fetch_next()
+				if len(current) == 0:
+					return
 			except urllib2.HTTPError:
 				return
-	
+
 	done = property(lambda s: len(s) == s.total)
 
 class NeedsAwokenError(Exception):
@@ -167,7 +169,7 @@ required - not on object creation."""
 		self.url = url
 		self.fetch_callback = fetch
 		self.collection = collection if collection != None else self._collection(url)
-	
+
 	def _collection(self, c):
 		return c.split('/')[-1]
 
@@ -176,7 +178,7 @@ required - not on object creation."""
 			return self.count
 		else:
 			raise NeedsAwokenError(self)
-	
+
 	def fetch(self, **kw):
 		"""Fetch, from the API, the data this sequence is meant to hold."""
 
@@ -194,21 +196,21 @@ class StackExchangeLazyObject(list):
 		self.url = url
 		self.fetch_callback = fetch
 		self.collection = collection if collection != None else self._collection(url)
-	
+
 	def fetch(self, **kw):
 		"""Fetch, from the API, the data supposed to be held."""
 		res = self.site.build(self.url, self.m_type, self.collection, kw)[0]
 		if self.fetch_callback != None:
 			self.fetch_callback(res)
 		return res
-	
+
 	def __getattr__(self, key):
 		raise NeedsAwokenError
 
 #### Hack, because I can't be bothered to fix my mistaking JSON's output for an object not a dict
 # Attrib: Eli Bendersky, http://stackoverflow.com/questions/1305532/convert-python-dict-to-object/1305663#1305663
 class DictObject:
-    def __init__(self, entries): 
+    def __init__(self, entries):
         self.__dict__.update(entries)
 
 class JSONMangler(object):
@@ -228,11 +230,11 @@ class JSONMangler(object):
 		rs = StackExchangeResultset(items, page, pagesize, params)
 		rs.total = json['total']
 		return rs
-	
+
 	@staticmethod
 	def normal_to_resultset(site, json, typ, collection):
 		return tuple([typ(x, site) for x in json[collection]])
-	
+
 	@classmethod
 	def json_to_resultset(cls, site, json, typ, collection, params=None):
 		if 'page' in json:
