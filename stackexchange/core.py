@@ -233,7 +233,8 @@ class JSONMangler(object):
 
 	@staticmethod
 	def normal_to_resultset(site, json, typ, collection):
-		return tuple([typ(x, site) for x in json[collection]])
+		# the parameter 'collection' may be need in future, and was needed pre-2.0
+		return tuple([typ(x, site) for x in json['items']])
 
 	@classmethod
 	def json_to_resultset(cls, site, json, typ, collection, params=None):

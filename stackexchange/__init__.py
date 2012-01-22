@@ -5,6 +5,12 @@ from stackexchange.core import *
 # Site constants
 from stackexchange.sites import *
 
+def or_none(o, k):
+	try:
+		return getattr(o, k)
+	except:
+		return None
+
 ##### Statistics    ###
 class Statistics(JSONModel):
 	"""Stores statistics for a StackExchange site."""
@@ -27,7 +33,9 @@ class Answer(JSONModel):
 			comment = False
 		else:
 			comment = ('comment' in json._params_ and json._params_['comment'])
-		self.comments = site.build_from_snippet(json.comments, Comment) if comment else StackExchangeLazySequence(Comment, None, site, json.answer_comments_url, self._up('comments'))
+
+		answer_comments_url = 'answers/%d/comments' % self.id
+		self.comments = site.build_from_snippet(json.comments, Comment) if comment else StackExchangeLazySequence(Comment, None, site, answer_comments_url, self._up('comments'))
 
 		self._question, self._owner = None, None
 		if hasattr(json, 'owner'):
@@ -42,7 +50,10 @@ class Answer(JSONModel):
 			self.last_activity_date = datetime.date.fromtimestamp(json.last_activity_date)
 
 		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
-		self.votes = (self.up_vote_count, self.down_vote_count)
+
+		if hasattr(self, 'up_vote_count') and hasattr(self, 'down_vote_count'):
+			self.votes = (self.up_vote_count, self.down_vote_count)
+
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.question_id) + '/' + str(self.id) + '#' + str(self.id)
 
 	def _get_user(self, id):
@@ -83,14 +94,16 @@ class Question(JSONModel):
 	def _extend(self, json, site):
 		self.id = json.question_id
 
-		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.question_timeline_url, self._up('timeline'))
+		timeline_url = 'questions/%d/timeline' % self.id
+		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, timeline_url, self._up('timeline'))
 		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
 
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-		self.comments_url = json.question_comments_url
-		self.comments = StackExchangeLazySequence(Comment, None, site, self.comments_url, self._up('comments'))
 
-		self.answers_url = json.question_answers_url
+		comments_url = 'questions/%d/comments' % self.id
+		self.comments = StackExchangeLazySequence(Comment, None, site, comments_url, self._up('comments'))
+
+		self.answers_url = 'questions/%d/answers' % self.id
 
 		if hasattr(json, 'answers'):
 			self.answers = [Answer(x, site) for x in json.answers]
@@ -275,7 +288,9 @@ class Badge(JSONModel):
 	transfer = ('name', 'description', 'award_count', 'tag_based')
 	def _extend(self, json, site):
 		self.id = json.badge_id
-		self.recipients = StackExchangeLazySequence(User, None, site, json.badges_recipients_url, self._up('recipients'))
+
+		badges_recipients_url = 'badges/%d/recipients' % self.id
+		self.recipients = StackExchangeLazySequence(User, None, site, badges_recipients_url, self._up('recipients'))
 
 	def __str__(self):
 		return self.name
@@ -383,27 +398,45 @@ class User(JSONModel):
 		self.last_access_date = datetime.date.fromtimestamp(json.last_access_date)
 		self.reputation = FormattedReputation(json.reputation)
 
-		self.questions = StackExchangeLazySequence(Question, json.question_count, site, json.user_questions_url, self._up('questions'))
+		user_questions_url = 'users/%d/questions' % self.id
+		question_count = or_none(json, 'question_count')
+		self.questions = StackExchangeLazySequence(Question, question_count, site, user_questions_url, self._up('questions'))
+
+		user_favorites_url = 'users/%d/favorites' % self.id
+		self.favorites = StackExchangeLazySequence(Question, None, site, user_favorites_url, self._up('favorites'), 'questions')
+
 		self.no_answers_questions = StackExchangeLazySequence(Question, None, site, 'users/%d/questions/no-answers' % self.id, self._up('no_answers_questions'), 'questions')
 		self.unanswered_questions = StackExchangeLazySequence(Question, None, site, 'users/%d/questions/unanswered' % self.id, self._up('unanswered_questions'), 'questions')
 		self.unaccepted_questions = StackExchangeLazySequence(Question, None, site, 'users/%d/questions/unaccepted' % self.id, self._up('unaccepted_questions'), 'questions')
-		self.favorites = StackExchangeLazySequence(Question, None, site, json.user_favorites_url, self._up('favorites'), 'questions')
 
-		self.answers = StackExchangeLazySequence(Answer, json.answer_count, site, json.user_answers_url, self._up('answers'))
+		user_answers_url = 'users/%d/answers' % self.id
+		answer_count = or_none(json, 'answer_count')
+		self.answers = StackExchangeLazySequence(Answer, answer_count, site, user_answers_url, self._up('answers'))
+
 		# Grr, American spellings. Using them for consistency with official API.
-		self.tags = StackExchangeLazySequence(Tag, None, site, json.user_tags_url, self._up('tags'))
-		self.badges = StackExchangeLazySequence(Badge, None, site, json.user_badges_url, self._up('badges'))
-		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.user_timeline_url, self._up('timeline'), 'user_timelines')
-		self.reputation_detail = StackExchangeLazySequence(RepChange, None, site, json.user_reputation_url, self._up('reputation_detail'))
+		user_tags_url = 'users/%d/tags' % self.id
+		self.tags = StackExchangeLazySequence(Tag, None, site, user_tags_url, self._up('tags'))
 
-		self.mentioned = StackExchangeLazySequence(Comment, None, site, json.user_mentioned_url, self._up('mentioned'), 'comments')
-		self.comments = StackExchangeLazySequence(Comment, None, site, json.user_comments_url, self._up('comments'))
-		self.mentioned = StackExchangeLazySequence(Comment, None, site, 'users/%d/mentioned' % self.id, self._up('mentioned'))
+		user_badges_url = 'users/%d/badges' % self.id
+		self.badges = StackExchangeLazySequence(Badge, None, site, user_badges_url, self._up('badges'))
+
+		user_timeline_url = 'users/%d/timeline' % self.id
+		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, user_timeline_url, self._up('timeline'), 'user_timelines')
+
+		user_reputation_url = 'users/%d/reputation' % self.id
+		self.reputation_detail = StackExchangeLazySequence(RepChange, None, site, user_reputation_url, self._up('reputation_detail'))
+
+		user_mentioned_url = 'users/%d/mentioned' % self.id
+		self.mentioned = StackExchangeLazySequence(Comment, None, site, user_mentioned_url, self._up('mentioned'), 'comments')
+
+		user_comments_url = 'users/%d/comments' % self.id
+		self.comments = StackExchangeLazySequence(Comment, None, site, user_comments_url, self._up('comments'))
 
 		self.top_answer_tags = StackExchangeLazySequence(TopTag, None, site, 'users/%d/top-answer-tags' % self.id, self._up('top_answer_tags'), 'top_tags')
 		self.top_question_tags = StackExchangeLazySequence(TopTag, None, site, 'users/%d/top-question-tags' % self.id, self._up('top_question_tags'), 'top_tags')
 
-		self.vote_counts = (self.up_vote_count, self.down_vote_count)
+		if hasattr(self, 'up_vote_count') and hasattr(self, 'down_vote_count'):
+			self.vote_counts = (self.up_vote_count, self.down_vote_count)
 
 		gold = json.badge_counts['gold'] if 'gold' in json.badge_counts else 0
 		silver = json.badge_counts['silver'] if 'silver' in json.badge_counts else 0
@@ -551,7 +584,8 @@ through here."""
 			return str(ob).lower()
 
 	def _request(self, to, params):
-		url = 'http://' + self.domain + '/' + self.api_version + '/' + to
+		url = 'http://api.stackexchange.com/' + self.api_version + '/' + to
+		params['site'] = self.root_domain
 
 		new_params = {}
 		for k, v in params.iteritems():
@@ -569,9 +603,10 @@ through here."""
 
 		json, info = request_mgr.json_request(url, new_params)
 
-		self.rate_limit = (int(info.getheader('X-RateLimit-Current')), int(info.getheader('X-RateLimit-Max')))
-		self.requests_used = self.rate_limit[1] - self.rate_limit[0]
-		self.requests_left = self.rate_limit[0]
+		if hasattr(json, 'quota_remaining') and hasattr(json, 'quota_max'):
+			self.rate_limit = (json.quota_remaining, json.quota_max)
+			self.requests_used = self.rate_limit[1] - self.rate_limit[0]
+			self.requests_left = self.rate_limit[0]
 
 		return json
 

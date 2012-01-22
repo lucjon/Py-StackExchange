@@ -1,16 +1,19 @@
 import logging
 
-import stackexchange, unittest
+import stackexchange, stackexchange.web, unittest
 import stackexchange.sites as stacksites
 
 QUESTION_ID = 4
 ANSWER_ID = 98
 USER_ID = 23901
+API_KEY = 'pXlviKYs*UZIwKLPwJGgpg(('
 
 _l = logging.getLogger(__name__)
 
 def _setUp(self):
-	self.site = stackexchange.Site(stackexchange.StackOverflow, '1_9Gj-egW0q_k1JaweDG8Q')
+	self.site = stackexchange.Site(stackexchange.StackOverflow, API_KEY)
+
+stackexchange.web.WebRequestManager.debug = True
 
 class DataTests(unittest.TestCase):
 
@@ -18,14 +21,16 @@ class DataTests(unittest.TestCase):
 		_setUp(self)
 
 	def test_fetch_paged(self):
-		user = stackexchange.Site(stackexchange.Programmers, '1_9Gj-egW0q_k1JaweDG8Q').user(USER_ID)
+		user = stackexchange.Site(stackexchange.Programmers, API_KEY).user(USER_ID)
 
 		answers = user.answers.fetch(pagesize=60)
 		for answer in answers:
 			# dummy assert.. we're really testing paging here to make sure it doesn't get
 			# stuck in an infinite loop. there very well may be a better way of testing this,
 			# but it's been a long day and this does the trick
-			self.assertTrue(answer.title is not None)
+			# this used to test for title's presence, but title has been removed from the
+			# default filter
+			self.assertTrue(answer.id is not None)
 
 	def test_fetch_question(self):
 		s = self.site.question(QUESTION_ID)
