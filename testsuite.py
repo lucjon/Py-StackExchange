@@ -2,6 +2,7 @@ import logging
 
 import stackexchange, stackexchange.web, unittest
 import stackexchange.sites as stacksites
+import htmlentitydefs, re
 
 QUESTION_ID = 4
 ANSWER_ID = 98
@@ -14,6 +15,11 @@ def _setUp(self):
 	self.site = stackexchange.Site(stackexchange.StackOverflow, API_KEY)
 
 stackexchange.web.WebRequestManager.debug = True
+
+htmlentitydefs.name2codepoint['#39'] = 39
+def html_unescape(text):
+    return re.sub('&(%s);' % '|'.join(htmlentitydefs.name2codepoint),
+              lambda m: unichr(htmlentitydefs.name2codepoint[m.group(1)]), text)
 
 class DataTests(unittest.TestCase):
 
@@ -34,7 +40,7 @@ class DataTests(unittest.TestCase):
 
 	def test_fetch_question(self):
 		s = self.site.question(QUESTION_ID)
-		self.assertEqual(s.title, u"When setting a form's opacity should I use a decimal or double?")
+		self.assertEqual(html_unescape(s.title), u"When setting a form's opacity should I use a decimal or double?")
 
 	def test_fetch_answer(self):
 		s = self.site.answer(ANSWER_ID)
