@@ -79,7 +79,7 @@ class Answer(JSONModel):
 		return site.answer(self.id)
 
 	def __unicode__(self):
-		return u'Answer %d [%s]' % (self.id, self.title)
+		return u'Answer %d' % self.id
 
 	def __str__(self):
 		return str(unicode(self))
