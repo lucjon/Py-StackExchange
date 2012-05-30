@@ -100,6 +100,9 @@ class Question(JSONModel):
 		else:
 			self.answers = []
 
+		if hasattr(json, 'accepted_answer_id'):
+			self.accepted_answer_id = json.accepted_answer_id
+
 		if hasattr(json, 'owner'):
 			self.owner_id = json.owner['user_id']
 
