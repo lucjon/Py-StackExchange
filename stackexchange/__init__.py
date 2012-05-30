@@ -78,7 +78,7 @@ class Answer(JSONModel):
 
 class Question(JSONModel):
 	"""Describes a question on a StackExchange site."""
-	transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count', 'view_count', 'score', 'community_owned', 'title', 'body')
+	transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count', 'view_count', 'score', 'community_owned', 'title', 'body', 'answer_count')
 
 	def _extend(self, json, site):
 		self.id = json.question_id
