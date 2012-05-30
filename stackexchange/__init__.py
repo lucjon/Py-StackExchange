@@ -87,6 +87,9 @@ class Question(JSONModel):
 		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
 
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
+		if hasattr(json, 'last_activity_date'):
+			self.last_activity_date = datetime.date.fromtimestamp(json.last_activity_date)
+
 		self.comments_url = json.question_comments_url
 		self.comments = StackExchangeLazySequence(Comment, None, site, self.comments_url, self._up('comments'))
 
@@ -629,7 +632,7 @@ through here."""
 	def users(self, ids=[], **kw):
 		"""Retrieves a list of the users with the IDs specified in the `ids' parameter."""
 		return self._get(User, ids, 'users', kw)
-	
+
 	def users_by_name(self, name, **kw):
 		kw['filter'] = name
 		return self.users(**kw)
