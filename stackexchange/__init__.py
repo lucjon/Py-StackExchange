@@ -37,9 +37,9 @@ class Answer(JSONModel):
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 
 		if hasattr(json, 'last_edit_date'):
-			self.last_edit_date = datetime.date.fromtimestamp(json.last_edit_date)
+			self.last_edit_date = datetime.datetime.fromtimestamp(json.last_edit_date)
 		if hasattr(json, 'last_activity_date'):
-			self.last_activity_date = datetime.date.fromtimestamp(json.last_activity_date)
+			self.last_activity_date = datetime.datetime.fromtimestamp(json.last_activity_date)
 
 		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
 		self.votes = (self.up_vote_count, self.down_vote_count)
@@ -213,7 +213,7 @@ class TagSynonym(JSONModel):
 
 	def _extend(self, json, site):
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-		self.last_applied_date = datetime.date.fromtimestamp(json.last_applied_date)
+		self.last_applied_date = datetime.datetime.fromtimestamp(json.last_applied_date)
 
 	def __repr__(self):
 		return "<TagSynonym '%s'->'%s'>" % (self.from_tag, self.to_tag)
@@ -224,8 +224,8 @@ class TagWiki(JSONModel):
 	def _extend(self, json, site):
 		self.body = json.wiki_body
 		self.excerpt = json.wiki_excerpt
-		self.body_last_edit_date = datetime.date.fromtimestamp(json.body_last_edit_date)
-		self.excerpt_last_edit_date = datetime.date.fromtimestamp(json.excerpt_last_edit_date)
+		self.body_last_edit_date = datetime.datetime.fromtimestamp(json.body_last_edit_date)
+		self.excerpt_last_edit_date = datetime.datetime.fromtimestamp(json.excerpt_last_edit_date)
 
 		body_editor = dict(json.last_body_editor)
 		body_editor['id'] = body_editor['user_id']
@@ -290,7 +290,7 @@ class RepChange(JSONModel):
 
 	transfer = ('user_id', 'post_id', 'post_type', 'title', 'positive_rep', 'negative_rep')
 	def _extend(self, json, site):
-		self.on_date = datetime.date.fromtimestamp(json.on_date)
+		self.on_date = datetime.datetime.fromtimestamp(json.on_date)
 		self.score = self.positive_rep - self.negative_rep
 
 ## Timeline ##
@@ -383,7 +383,7 @@ class User(JSONModel):
 		self.id = json.user_id
 		self.type = Enumeration.from_string(json.user_type, UserType)
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-		self.last_access_date = datetime.date.fromtimestamp(json.last_access_date)
+		self.last_access_date = datetime.datetime.fromtimestamp(json.last_access_date)
 		self.reputation = FormattedReputation(json.reputation)
 
 		self.questions = StackExchangeLazySequence(Question, json.question_count, site, json.user_questions_url, self._up('questions'))
