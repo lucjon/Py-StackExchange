@@ -88,7 +88,7 @@ class Question(JSONModel):
 
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 		if hasattr(json, 'last_activity_date'):
-			self.last_activity_date = datetime.date.fromtimestamp(json.last_activity_date)
+			self.last_activity_date = datetime.datetime.fromtimestamp(json.last_activity_date)
 
 		self.comments_url = json.question_comments_url
 		self.comments = StackExchangeLazySequence(Comment, None, site, self.comments_url, self._up('comments'))
