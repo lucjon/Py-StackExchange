@@ -36,8 +36,8 @@ class WebRequestManager(object):
 		self.do_cache = cache
 		# The time, in seconds, to cache a response
 		self.cache_age = cache_age
-	
-	window = None
+
+	window = datetime.datetime.now()
 	num_requests = 0
 
 	def debug_print(self, *p):
@@ -71,8 +71,8 @@ class WebRequestManager(object):
 
 		# Before we do the actual request, are we going to be throttled?
 		if self.impose_throttling:
-			if (window - now).seconds >= 5:
-				window = now
+			if (WebRequestManager.window - now).seconds >= 5:
+				WebRequestManager.window = now
 				num_requests = 0
 			num_requests += 1
 			if num_requests > 30:
@@ -80,12 +80,12 @@ class WebRequestManager(object):
 					raise TooManyRequestsError()
 				else:
 					# Wait the required time, plus a bit of extra padding time.
-					time.sleep(5 - (window - now).seconds + 0.1)
+					time.sleep(5 - (WebRequestManager.window - now).seconds + 0.1)
 
 		# We definitely do need to go out to the internet, so make the real request
 		self.debug_print('R>', url)
 		request = urllib2.Request(url)
-		
+
 		request.add_header('Accept-encoding', 'gzip')
 		req_open = urllib2.build_opener()
 		conn = req_open.open(request)
