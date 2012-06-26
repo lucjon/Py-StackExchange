@@ -73,9 +73,9 @@ class WebRequestManager(object):
 		if self.impose_throttling:
 			if (WebRequestManager.window - now).seconds >= 5:
 				WebRequestManager.window = now
-				num_requests = 0
-			num_requests += 1
-			if num_requests > 30:
+				WebRequestManager.num_requests = 0
+			WebRequestManager.num_requests += 1
+			if WebRequestManager.num_requests > 30:
 				if self.throttle_stop:
 					raise TooManyRequestsError()
 				else:
