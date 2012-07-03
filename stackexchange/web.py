@@ -37,7 +37,9 @@ class WebRequestManager(object):
 		# The time, in seconds, to cache a response
 		self.cache_age = cache_age
 
+	# When we last made a request
 	window = datetime.datetime.now()
+	# Number of requests since last throttle window
 	num_requests = 0
 
 	def debug_print(self, *p):
