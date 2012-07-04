@@ -73,7 +73,7 @@ class WebRequestManager(object):
 
 		# Before we do the actual request, are we going to be throttled?
 		if self.impose_throttling:
-			if (WebRequestManager.window - now).seconds >= 5:
+			if (now - WebRequestManager.window).seconds >= 5:
 				WebRequestManager.window = now
 				WebRequestManager.num_requests = 0
 			WebRequestManager.num_requests += 1
