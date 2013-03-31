@@ -95,9 +95,8 @@ class WebRequestManager(object):
 		req_data = conn.read()
 
 		# Handle compressed responses.
-		# (Stack Exchange's API sends its responses compressed but intermediary
-		# proxies may send them to us decompressed.)
-		if conn.info().getheader('Content-Encoding') == 'gzip':
+		# 1F 8B is the gzip format magic number
+		if req_data.startswith('\x1f\x8b'):
 			data_stream = StringIO.StringIO(req_data)
 			gzip_stream = gzip.GzipFile(fileobj=data_stream)
 
