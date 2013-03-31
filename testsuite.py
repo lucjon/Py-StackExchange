@@ -70,7 +70,7 @@ class PlumbingTests(unittest.TestCase):
 		# repro code for bug #4 (thanks, beaumartinez!)
 
 		# Create two different sites.
-		a = stackexchange.Site('api.askubuntu.com')
+		a = stackexchange.Site('api.superuser.com')
 		b = self.site
 
 		# Create two different searches from the different sites.
@@ -78,7 +78,7 @@ class PlumbingTests(unittest.TestCase):
 		b_search = b.search(intitle='vim', pagesize=100)
 
 		# (We demonstrate that the second search has a second page.)
-		self.assertEqual(len(b_search.fetch_next()), 100)
+		self.assertGreater(len(b_search.fetch_next()), 1)
 
 		# Reset the searches.
 		a_search = a.search(intitle='vim', pagesize=100)
@@ -90,7 +90,7 @@ class PlumbingTests(unittest.TestCase):
 
 		# Try get the next page of the second search. It will be empty.
 		# Here's the bug.
-		self.assertEqual(len(b_search.fetch_next()), 100)
+		self.assertGreater(len(b_search.fetch_next()), 1)
 
 
 if __name__ == '__main__':
