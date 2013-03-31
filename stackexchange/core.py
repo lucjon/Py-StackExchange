@@ -2,7 +2,6 @@
 # This file is relatively safe to "import *"
 
 import datetime, urllib2
-from math import floor
 
 ## JSONModel base class
 class JSONModel(object):

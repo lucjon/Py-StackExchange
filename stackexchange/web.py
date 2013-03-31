@@ -1,7 +1,6 @@
 # stackweb.py - Core classes for web-request stuff
 
-import urllib2, httplib, datetime, operator, StringIO, gzip, time, urllib
-import datetime
+import urllib2, datetime, StringIO, gzip, time, urllib
 try:
 	import json
 except ImportError:
