@@ -16,7 +16,7 @@ accounts = stack_auth.api_associated(so, user_id)
 reputation = {}
 
 for account in accounts:
-	print '  %s: %s / %d reputation' % (account.display_name, account.on_site.name, account.reputation)
+	print '  %s / %d reputation' % (account.on_site.name, account.reputation)
 
 	# This may seem a slightly backwards way of storing it, but it's easier for finding the max
 	reputation[account.reputation] = account.on_site.name

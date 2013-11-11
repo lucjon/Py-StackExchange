@@ -390,13 +390,15 @@ class User(JSONModel):
 	"""Describes a user on a StackExchange site."""
 
 	transfer = ('display_name', 'email_hash', 'age', 'website_url', 'location', 'about_me',
-		'view_count', 'up_vote_count', 'down_vote_count', 'association_id')
+		'view_count', 'up_vote_count', 'down_vote_count', 'account_id')
 	def _extend(self, json, site):
 		self.id = json.user_id
-		self.type = Enumeration.from_string(json.user_type, UserType)
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 		self.last_access_date = datetime.date.fromtimestamp(json.last_access_date)
 		self.reputation = FormattedReputation(json.reputation)
+
+		# for compatibility reasons; this field name changed in v2.x
+		self.association_id = json.account_id
 
 		user_questions_url = 'users/%d/questions' % self.id
 		question_count = or_none(json, 'question_count')
@@ -437,6 +439,9 @@ class User(JSONModel):
 
 		if hasattr(self, 'up_vote_count') and hasattr(self, 'down_vote_count'):
 			self.vote_counts = (self.up_vote_count, self.down_vote_count)
+
+		self.type = Enumeration.from_string(json.user_type, UserType) if hasattr(json, 'user_type') else None
+
 
 		gold = json.badge_counts['gold'] if 'gold' in json.badge_counts else 0
 		silver = json.badge_counts['silver'] if 'silver' in json.badge_counts else 0
