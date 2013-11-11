@@ -492,6 +492,30 @@ class QuestionsQuery(object):
 		if self.site.include_comments:
 			kw['comments'] = 'true'
 
+		# for API v2.x, the comments, body and answers parameters no longer
+		# exist; instead, we have to use filters. for now, take the easy way
+		# out and just rewrite them in terms of the new filters.
+		if 'filter' not in kw:
+			filter_name = '_'
+
+			if kw['body'] == 'true':
+				filter_name += 'b'
+				del kw['body']
+			if kw['comments'] == 'true':
+				filter_name += 'c'
+				del kw['comments']
+			if kw['answers'] == 'true':
+				filter_name += 'a'
+				del kw['answers']
+
+			if filter_name == '_ca':
+				# every other compatibility filter name works in the above
+				# order except this one...
+				kw['filter'] = '_ac'
+			elif filter_name != '_':
+				kw['filter'] = filter_name
+
+
 	def __call__(self, ids=None, user_id=None, **kw):
 		self.check(kw)
 
