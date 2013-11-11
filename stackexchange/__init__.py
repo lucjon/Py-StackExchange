@@ -39,7 +39,7 @@ class Answer(JSONModel):
 
 		self._question, self._owner = None, None
 		if hasattr(json, 'owner'):
-			self.owner_id = json.owner['user_id']
+			self.owner_id = json.owner.get('user_id')
 			self.owner_info = tuple(json.owner.values())
 
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
@@ -498,13 +498,13 @@ class QuestionsQuery(object):
 		if 'filter' not in kw:
 			filter_name = '_'
 
-			if kw['body'] == 'true':
+			if kw.get('body') == 'true':
 				filter_name += 'b'
 				del kw['body']
-			if kw['comments'] == 'true':
+			if kw.get('comments') == 'true':
 				filter_name += 'c'
 				del kw['comments']
-			if kw['answers'] == 'true':
+			if kw.get('answers') == 'true':
 				filter_name += 'a'
 				del kw['answers']
 
