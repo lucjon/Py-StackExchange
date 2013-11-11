@@ -503,13 +503,13 @@ class QuestionsQuery(object):
 		if 'filter' not in kw:
 			filter_name = '_'
 
-			if kw.get('body') == 'true':
+			if kw.get('body'):
 				filter_name += 'b'
 				del kw['body']
-			if kw.get('comments') == 'true':
+			if kw.get('comments'):
 				filter_name += 'c'
 				del kw['comments']
-			if kw.get('answers') == 'true':
+			if kw.get('answers'):
 				filter_name += 'a'
 				del kw['answers']
 
