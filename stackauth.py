@@ -17,6 +17,7 @@ class SiteDefinition(JSONModel):
 		fixed_state = re.sub(r'_([a-z])', lambda match: match.group(1).upper(), json.site_state)
 		fixed_state = fixed_state[0].upper() + fixed_state[1:]
 
+		self.api_endpoint = self.site_url
 		self.state = SiteState.from_string(fixed_state)
 		self.styling = DictObject(json.styling)
 	

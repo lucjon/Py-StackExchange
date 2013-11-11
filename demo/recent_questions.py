@@ -11,7 +11,7 @@ so.be_inclusive()
 sys.stdout.write('Loading...')
 sys.stdout.flush()
 
-questions = so.recent_questions(pagesize=10)
+questions = so.recent_questions(pagesize=10, filter='_b')
 print '\r #  vote ans view'
 
 cur = 1

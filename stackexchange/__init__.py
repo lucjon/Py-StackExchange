@@ -110,7 +110,7 @@ class Question(JSONModel):
 		else:
 			self.answers = []
 
-		if hasattr(json, 'owner'):
+		if hasattr(json, 'owner') and 'user_id' in json.owner:
 			self.owner_id = json.owner['user_id']
 
 			owner_dict = dict(json.owner)
