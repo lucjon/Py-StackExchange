@@ -58,9 +58,10 @@ class WebRequestManager(object):
 			if not done:
 				url += '?'
 				done = True
-			else: url += '&'
+			else:
+				url += '&'
 
-			url += '%s=%s' % (k, urllib.quote(v.encode('utf-8')))
+			url += '%s=%s' % (k, urllib.quote(str(v).encode('utf-8')))
 		
 		# Now we have the `proper` URL, we can check the cache
 		if self.do_cache and url in self.cache:
