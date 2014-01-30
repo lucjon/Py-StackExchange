@@ -1,6 +1,6 @@
 import logging
 
-import stackexchange, stackexchange.web, unittest
+import stackauth, stackexchange, stackexchange.web, unittest
 import stackexchange.sites as stacksites
 import htmlentitydefs, re
 
@@ -22,7 +22,6 @@ def html_unescape(text):
               lambda m: unichr(htmlentitydefs.name2codepoint[m.group(1)]), text)
 
 class DataTests(unittest.TestCase):
-
 	def setUp(self):
 		_setUp(self)
 
@@ -53,6 +52,19 @@ class DataTests(unittest.TestCase):
 		a = self.site.answer(ANSWER_ID, body=True)
 		self.assertTrue(hasattr(q, 'body'))
 		self.assertNotEqual(q.body, None)
+
+	def test_stackauth_site_types(self):
+		s = stackauth.StackAuth()
+		for site in s.sites():
+			self.assertTrue(site.site_type in {stackauth.SiteType.MainSite, stackauth.SiteType.MetaSite})
+	
+	def test_stackauth_site_instantiate(self):
+		for defn in stackauth.StackAuth().sites():
+			site_ob = defn.get_site()
+			# Do the same as test_fetch_answer() and hope we don't get an exception
+			defn.get_site().answer(ANSWER_ID)
+			# Only do it once!
+			break
 
 
 class PlumbingTests(unittest.TestCase):
@@ -102,6 +114,7 @@ class PlumbingTests(unittest.TestCase):
 		# Try get the next page of the second search. It will be empty.
 		# Here's the bug.
 		self.assertEqual(len(b_search.fetch_next()), 100)
+	
 
 
 if __name__ == '__main__':
