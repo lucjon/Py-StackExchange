@@ -590,7 +590,14 @@ through here."""
 
 		self.include_body = False
 		self.include_comments = False
-		self.root_domain = '.'.join(self.domain.split('.')[1:])
+
+		# In API v2.x, we generally don't get given api. at the start of these things, nor are they
+		# strictly domains in many cases. We continue to accept api.* names for compatibility.
+		domain_components = self.domain.split('.')
+		if domain_components[0] == 'api':
+			self.root_domain = '.'.join(domain_components[1:])
+		else:
+			self.root_domain = domain
 
 	URL_Roots = {
 		User: 'users/%s',
