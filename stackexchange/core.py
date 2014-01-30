@@ -13,8 +13,9 @@ class JSONModel(object):
 		self.json_ob = DictObject(json)
 		self.site = site
 
-		for f in [x for x in self.transfer if hasattr(self.json_ob, x)]:
-			setattr(self, f, getattr(self.json_ob, f))
+		for f in self.transfer:
+			if hasattr(self.json_ob, f):
+				setattr(self, f, getattr(self.json_ob, f))
 
 		if hasattr(self, '_extend') and not skip_ext:
 			self._extend(self.json_ob, site)
@@ -60,6 +61,7 @@ class Enumeration(object):
 
 	@classmethod
 	def from_string(cls, text, typ=None):
+		'Returns the appropriate enumeration value for the given string, mapping underscored names to CamelCase, or the input string if a mapping could not be made.'
 		if typ is not None:
 			if hasattr(typ, '_map') and text in typ._map:
 				return getattr(typ, typ._map[text])
@@ -70,9 +72,9 @@ class Enumeration(object):
 				if hasattr(typ, real_name):
 					return getattr(typ, real_name)
 				else:
-					return None
+					return text
 			else:
-				return None
+				return text
 		else:
 			return cls.from_string(text, cls)
 

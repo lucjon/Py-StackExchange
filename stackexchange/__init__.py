@@ -582,7 +582,7 @@ through here."""
 	def __init__(self, domain, app_key=None, cache=1800):
 		self.domain = domain
 		self.app_key = app_key
-		self.api_version = '2.0'
+		self.api_version = '2.1'
 
 		self.impose_throttling = False
 		self.throttle_stop = True
@@ -632,8 +632,8 @@ through here."""
 
 		json, info = request_mgr.json_request(url, new_params)
 
-		if hasattr(json, 'quota_remaining') and hasattr(json, 'quota_max'):
-			self.rate_limit = (json.quota_remaining, json.quota_max)
+		if 'quota_remaining' in json and 'quota_max' in json:
+			self.rate_limit = (json['quota_remaining'], json['quota_max'])
 			self.requests_used = self.rate_limit[1] - self.rate_limit[0]
 			self.requests_left = self.rate_limit[0]
 
