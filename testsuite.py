@@ -114,7 +114,6 @@ class PlumbingTests(unittest.TestCase):
 		# Try get the next page of the second search. It will be empty.
 		# Here's the bug.
 		self.assertEqual(len(b_search.fetch_next()), 100)
-	
 
 
 if __name__ == '__main__':

@@ -16,7 +16,7 @@ else:
 
 	qs = so.search(intitle=term)
 
-	print '\r--- %d questions with "%s" in title ---' % (qs.total, term)
+	print '\r--- questions with "%s" in title ---' % (qs.total, term)
 	
 	for q in qs:
 		print '%8d %s' % (q.id, q.title)
