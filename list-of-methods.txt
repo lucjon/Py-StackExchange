@@ -1,0 +1,350 @@
+Statistics
+	total_questions
+	total_unanswered
+	total_answers
+	total_comments
+	total_votes
+	total_badges
+	total_users
+	questions_per_minute
+	answers_per_minute
+	badges_per_minute
+	display_name
+
+Answer
+	accepted
+	locked_date
+	question_id
+	up_vote_count
+	down_vote_count
+	view_count
+	score
+	community_owned
+	title
+	body
+
+	id = answer_id
+	comments = {/answers/<id>/comments}: Comment
+	?owner_id = owner['user_id']
+	?owner_info = owner.values()
+	creation_date: datetime
+	?last_edit_date: datetime
+	?last_activity_date: datetime
+	revisions = {/revisions/<id>}: PostRevision
+	?votes = (up_vote_count, down_vote_count)
+	url = http://<site.root_domain>/questions/<question_id>/<id>#<id>
+	question = Question(question_id)
+	owner = User(owner_id)
+
+Question
+	id
+	tags
+	favorite_count
+	up_vote_count
+	down_vote_count
+	view_count
+	score
+	community_owned
+	title
+	body
+
+	id = question_id
+	timeline = {/questions/<id>/timeline}: TimelineEvent
+	revisions = {/revisions/<id>}: PostRevision
+	creation_date: datetime
+	comments = {/questions/<id>/comments}: Comment
+	?answers = {answers}: Answer
+	?owner_id = owner['user_id']
+	?owner = User.partial(owner_id)
+
+	linked() = site.questions(linked_to = id)
+	related() = site.questions(related_to = id)
+
+Comment
+	post_id
+	score
+	edit_count
+	body
+
+	id
+	creation_date: datetime
+	?owner_id = owner['owner_id' or 'user_id']
+	?owner = User.partial(owner_id)
+	?reply_to_user_id = reply_to['user_id']
+	?reply_to = User.partial(reply_to_user_id)
+	post_type: PostType
+	post = Question(post_id) or Answer(post_id)
+
+RevisionType(Enumeration):
+	SingleUser = 'single_user'
+	VoteBased = 'vote_based'
+
+PostRevision:
+	body
+	comment
+	is_question
+	is_rollback
+	last_body
+	last_title
+	revision_guid
+	revision_number
+	title
+	set_community_wiki
+	post_id
+	last_tags
+	tags
+
+	creation_date: datetime
+	revision_type: datetime
+	user = User.partial(user['user_id'])
+	post = Question(post_id) or Answer(post_id)
+	post_type = Question if is_question else Answer: PostType
+
+TagSynonym:
+	from_tag
+	to_tag
+	applied_count
+
+	creation_date: datetime
+	last_applied_date: datetime
+
+TagWiki:
+	tag_name
+
+	body = wiki_body
+	excerpt = wiki_excerpt
+	body_last_edit_date: datetime
+	excerpt_last_edit_date: datetime
+	last_body_editor = User.partial(last_body_editor['user_id'])
+	excerpt_editor = User.partial(last_excerpt_editor['user_id'])
+
+Period(Enumeration):
+	AllTime = 'all-time'
+	Month = 'month'
+
+TopUser:
+	score
+	post_count
+
+	user = Partial(user['user_id'])
+
+Tag:
+	name
+	count
+	fulfills_required
+
+	!id = name
+	synonyms = {/tags/<name>/synonyms}: TagSynonym
+	wiki = TagWiki(/tags/<name>/wikis)
+
+	top_askers() = {/tags/<name>/top-askers/<period: Period>}
+	top_answerers() = {/tags/<name>/top-answerers/<period: Period>}
+
+BadgeType(Enumeration):
+	Bronze = 1
+	Silver = 2
+	Gold = 3
+
+Badge:
+	name
+	description
+	award_count
+	tag_based
+
+	id = badge_id
+	recipients = {/badges/<id>/recipients}: User
+
+RepChange:
+	user_id
+	post_id
+	post_type
+	title
+	positive_rep
+	negative_rep
+
+	on_date: datetime
+	score = positive_rep - negative_rep
+
+TimelineEventType:
+	Comment = 'comment'
+	AskOrAnswered = 'askoranswered'
+	Badge = 'badge'
+	Revision = 'revision'
+	Accepted = 'accepted'
+
+TimelineEvent:
+	user_id
+	post_id
+	comment_id
+	action
+	description
+	detail
+
+	timeline_type: TimelineEventType
+	?post_type: PostType
+	?creation_date: datetime
+	?post = Post(post_id)
+	?comment = Comment(post_id)
+	?badge = Badge(description)
+
+PostType(Enumeration):
+	Question = 'question'
+	Answer = 'answer'
+
+UserType(Enumeration):
+	Anonymous = 'anonymous'
+	Registered = 'registered'
+	Unregistered = 'unregistered'
+	Moderator = 'moderator'
+
+TopTag:
+	tag_name
+	question_score
+	question_count
+	answer_score
+	answer_count
+
+User:
+	display_name
+	email_hash
+	age
+	website_url
+	location
+	about_me
+	view_count
+	up_vote_count
+	down_vote_count
+	account_id
+
+	id = user_id
+	creation_date: datetime
+	last_access_date: date
+	reputation: FormattedReputation
+	association_id = account_id
+
+	questions = {/users/<id>/questions}: Question
+	favorites = {/users/<id>/favorites}: Question
+	no_answers_questions = {/users/<id>/questions/no-answers}: Question
+	unanswered_questions = {/users/<id>/questions/unanswered}: Question
+	unaccepted_questions = {/users/<id>/questions/unaccepted}: Question
+	answers = {/users/<id>/answers}: Answer
+	tags = {/users/<id>/tags}: Tag
+	badges = {/users/<id>/badges}: Badge
+	timeline = {/users/<id>/timeline}: TimelineEvent
+	reputation = {/users/<id>/reputation}: RepChange
+	mentioned = {/users/<id>/mentioned}: Comment
+	comments = {/users/<id>/comments}: Comment
+	top_answer_tags = {/users/<id>/top-answer-tags}: TopTag
+	top_question_tags = {/users/<id>/top-question-tags}: TopTag
+
+	?vote_counts = (up_vote_count, down_vote_count)
+	gold_badges = badge_counts['gold'] or 0
+	silver_badges = badge_counts['silver'] or 0
+	bronze_badges = badge_counts['bronze'] or 0
+	badge_counts_t = (gold_badges, silver_badges, bronze_badges)
+	badge_counts = {BadgeType.Gold: gold_badges, BadgeType.Silver: silver_badges, BadgeType.Bronze: bronze_badges}
+	badge_total = gold_badges + silver_badges + bronze_badges
+	?type = user_type: UserType
+	is_moderator = type == UserType.Moderator
+	url = http://<site.root_domain>/users/<id>
+
+	has_privelege(p: Privelege) => reputation >= p.reputation
+	top_answers_in_tag(tag) => {/users/<id>/tags/<tag>/top-answers}: Answer
+	top_questions_in_tag(tag) => {/users/<id>/tags/<tag>/top-questions}: Question
+	comments_to(u: User or int) => {/users/<id>/comments/<u.id or u>}: Comment
+
+Privelege:
+	short_description
+	description
+	reputation
+
+
+-----
+Site is not a model, so it's a bit more complicated to describe. Here's a skeleton of its public API, with some
+'not-really-public' APIs marked with !.
+
+@keyword means that documentation for the corresponding API method is available at
+	http://api.stackexchange.com/docs/keyword
+
+Site(domain, app_key = None, cache = 1800):
+	domain
+	app_key
+	api_version
+	impose_throttling
+	throttle_stop
+	cache_options
+	include_body
+	include_comments
+	root_domain
+
+	be_inclusive()
+	!build(url, typ, collection, kw = {})
+	!build_from_snippet(json, typ)
+	!vectorise(lst, or_of_type = None)
+
+	user(nid, **) @users-by-ids
+	users(ids = [], **) @users @users-by-ids
+	users_by_name(name, **)
+	moderators(**) @moderators
+	answer(nid, **) @answers-by-ids
+	answers(ids = None, **) @answers @answers-by-ids
+	comment(nid, **) @comments-by-ids
+	comments(ids = None, posts = None, **) @comments @comments-by-ids
+	question(nid, **) @questions-by-ids
+	questions(ids = None, user_id = None, **) @questions @questions-by-ids
+	questions.linked_to(qns, **) @linked-questions
+	questions.related_to(qns, **) @related-questions
+	questions.by_user(user, **) @questions-on-users
+	questions.unanswered(by = None, **) @unanswered-questions
+	questions.no_answers(by = None, **) @no-answer-questions
+	questions.unaccepted(by, **) @unaccepted-questions-on-users
+	questions.favorited_by(by, **) @favorites-on-users
+	recent_questions(**) @questions
+	users_with_badge(bid, **) @badge-recipients-by-ids
+	all_badges(**) @badges
+	badges(ids = None, **) @badges-by-ids
+	badge(nid, name = None, **) @badges-by-ids @badges-by-name
+	privileges(**) @privileges
+	all_nontag_badges(**) @badges-by-name
+	all_tag_badges(**) @badges-by-tag
+	all_tags(**) @tags
+	stats(**)
+	revision(post, guid, **) @revisions-by-guids
+	revisions(post, **) @revisions-by-ids
+	search(**) @search
+	similar(title, tagged = None, nontagged = None, **) @similar
+	tags(**) @tags
+	tag(tag, **) @tags-by-name
+	tag_synonyms(**) @tag-synonyms
+
+StackAuth
+	sites() = {/sites}: SiteDefinition
+	# The api_* equivalents only return values for sites which can be accessed by the API,
+	# i.e. not Area 51
+	associated_from_assoc(assoc_id) = {/users/<assoc_id>/associated}: UserAssociation
+	api_associated_from_assoc(assoc_id)
+	associated(site: Site, user_id) = associated_from_assoc(association ID of user on site)
+	api_associated(site: Site, user_id)
+
+SiteDefinition
+	name
+	logo_url
+	api_endpoint
+	site_url
+	description
+	icon_url
+	aliases
+
+	get_site(): Site
+
+UserAssociation
+	display_name
+	reputation
+	email_hash
+	
+	id = user_id
+	user_type: UserType
+	on_site: Area51 or SiteDefinition
+	has_endpoint = isinstance(on_site, SiteDefinition)
+
+	get_user(): User
