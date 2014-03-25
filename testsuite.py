@@ -1,35 +1,45 @@
 import logging
 
-import stackexchange, unittest
+import stackauth, stackexchange, stackexchange.web, unittest
 import stackexchange.sites as stacksites
+import htmlentitydefs, re
 
 QUESTION_ID = 4
 ANSWER_ID = 98
 USER_ID = 23901
+API_KEY = '1_9Gj-egW0q_k1JaweDG8Q'
 
 _l = logging.getLogger(__name__)
 
 def _setUp(self):
-	self.site = stackexchange.Site(stackexchange.StackOverflow, '1_9Gj-egW0q_k1JaweDG8Q')
+	self.site = stackexchange.Site(stackexchange.StackOverflow, API_KEY)
+
+stackexchange.web.WebRequestManager.debug = True
+
+htmlentitydefs.name2codepoint['#39'] = 39
+def html_unescape(text):
+    return re.sub('&(%s);' % '|'.join(htmlentitydefs.name2codepoint),
+              lambda m: unichr(htmlentitydefs.name2codepoint[m.group(1)]), text)
 
 class DataTests(unittest.TestCase):
-
 	def setUp(self):
 		_setUp(self)
 
 	def test_fetch_paged(self):
-		user = stackexchange.Site(stackexchange.Programmers, '1_9Gj-egW0q_k1JaweDG8Q').user(USER_ID)
+		user = stackexchange.Site(stackexchange.Programmers, API_KEY).user(USER_ID)
 
 		answers = user.answers.fetch(pagesize=60)
 		for answer in answers:
 			# dummy assert.. we're really testing paging here to make sure it doesn't get
 			# stuck in an infinite loop. there very well may be a better way of testing this,
 			# but it's been a long day and this does the trick
-			self.assertTrue(answer.title is not None)
+			# this used to test for title's presence, but title has been removed from the
+			# default filter
+			self.assertTrue(answer.id is not None)
 
 	def test_fetch_question(self):
 		s = self.site.question(QUESTION_ID)
-		self.assertEqual(s.title, u"When setting a form's opacity should I use a decimal or double?")
+		self.assertEqual(html_unescape(s.title), u"When setting a form's opacity should I use a decimal or double?")
 
 	def test_fetch_answer(self):
 		s = self.site.answer(ANSWER_ID)
@@ -42,6 +52,14 @@ class DataTests(unittest.TestCase):
 		a = self.site.answer(ANSWER_ID, body=True)
 		self.assertTrue(hasattr(q, 'body'))
 		self.assertNotEqual(q.body, None)
+	
+	def test_stackauth_site_instantiate(self):
+		for defn in stackauth.StackAuth().sites():
+			site_ob = defn.get_site()
+			# Do the same as test_fetch_answer() and hope we don't get an exception
+			defn.get_site().answer(ANSWER_ID)
+			# Only do it once!
+			break
 
 
 class PlumbingTests(unittest.TestCase):

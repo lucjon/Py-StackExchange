@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Setuptools is required for the use_2to3 option below. You should install it
 # from the Distribute home page, http://packages.python.org/distribute/
 import sys
@@ -12,7 +14,7 @@ if sys.version_info > (3, 0):
 setup(
 	name = 'py-stackexchange',
 	py_modules = ['stackexchange.core', 'stackexchange.sites', 'stackexchange.web', 'stackauth'],
-	version = '1.1-4',
+	version = '2.0',
 	description = 'A Python binding to the StackExchange (Stack Overflow, Server Fault, etc.) website APIs.',
 	author = 'Lucas Jones',
 	author_email = 'lucas@lucasjones.co.uk',

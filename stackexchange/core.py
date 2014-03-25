@@ -1,6 +1,5 @@
 # stackcore.py - JSONModel/Enumeration + other utility classes that don't really belong now that the API's multi-file
 # This file is relatively safe to "import *"
-
 import datetime, urllib2
 
 ## JSONModel base class
@@ -12,8 +11,33 @@ class JSONModel(object):
 		self.json_ob = DictObject(json)
 		self.site = site
 
-		for f in [x for x in self.transfer if hasattr(self.json_ob, x)]:
-			setattr(self, f, getattr(self.json_ob, f))
+		cast_mappings = {
+			datetime.datetime: (lambda x: datetime.datetime.fromtimestamp(x)),
+		}
+
+		for f in self.transfer:
+			if isinstance(f, tuple):
+				name, cast_to = f
+			else:
+				name, cast_to = (f, None)
+
+			if name in json:
+				value = json[name]
+				if isinstance(cast_to, type) and issubclass(cast_to, Enumeration):
+					value = cast_to.from_string(value)
+				elif cast_to in cast_mappings:
+					value = cast_mappings[cast_to](value)
+				elif callable(cast_to):
+					value = cast_to(value)
+				elif cast_to is not None:
+					raise TypeError('Cannot cast to %s' % cast_to)
+
+				setattr(self, name, value)
+		
+		if hasattr(self, 'alias'):
+			for name, json_name in self.alias.items():
+				if json_name in json:
+					setattr(self, name, json[json_name])
 
 		if hasattr(self, '_extend') and not skip_ext:
 			self._extend(self.json_ob, site)
