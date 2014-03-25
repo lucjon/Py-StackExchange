@@ -1,8 +1,6 @@
 # stackcore.py - JSONModel/Enumeration + other utility classes that don't really belong now that the API's multi-file
 # This file is relatively safe to "import *"
-
 import datetime, urllib2
-from math import floor
 
 ## JSONModel base class
 class JSONModel(object):
@@ -13,9 +11,33 @@ class JSONModel(object):
 		self.json_ob = DictObject(json)
 		self.site = site
 
+		cast_mappings = {
+			datetime.datetime: (lambda x: datetime.datetime.fromtimestamp(x)),
+		}
+
 		for f in self.transfer:
-			if hasattr(self.json_ob, f):
-				setattr(self, f, getattr(self.json_ob, f))
+			if isinstance(f, tuple):
+				name, cast_to = f
+			else:
+				name, cast_to = (f, None)
+
+			if name in json:
+				value = json[name]
+				if isinstance(cast_to, type) and issubclass(cast_to, Enumeration):
+					value = cast_to.from_string(value)
+				elif cast_to in cast_mappings:
+					value = cast_mappings[cast_to](value)
+				elif callable(cast_to):
+					value = cast_to(value)
+				elif cast_to is not None:
+					raise TypeError('Cannot cast to %s' % cast_to)
+
+				setattr(self, name, value)
+		
+		if hasattr(self, 'alias'):
+			for name, json_name in self.alias.items():
+				if json_name in json:
+					setattr(self, name, json[json_name])
 
 		if hasattr(self, '_extend') and not skip_ext:
 			self._extend(self.json_ob, site)
@@ -61,7 +83,6 @@ class Enumeration(object):
 
 	@classmethod
 	def from_string(cls, text, typ=None):
-		'Returns the appropriate enumeration value for the given string, mapping underscored names to CamelCase, or the input string if a mapping could not be made.'
 		if typ is not None:
 			if hasattr(typ, '_map') and text in typ._map:
 				return getattr(typ, typ._map[text])
@@ -72,9 +93,9 @@ class Enumeration(object):
 				if hasattr(typ, real_name):
 					return getattr(typ, real_name)
 				else:
-					return text
+					return None
 			else:
-				return text
+				return None
 		else:
 			return cls.from_string(text, cls)
 
@@ -90,15 +111,10 @@ class StackExchangeResultset(tuple):
 	"""Defines an immutable, paginated resultset. This class can be used as a tuple, but provides extended metadata as well, including methods
 to fetch the next page."""
 
-	def __new__(cls, items, build_info, has_more = True, page = 1, pagesize = None):
-		if pagesize is None:
-			pagesize = len(items)
-
+	def __new__(cls, items, page, pagesize, build_info):
 		instance = tuple.__new__(cls, items)
 		instance.page, instance.pagesize, instance.build_info = page, pagesize, build_info
 		instance.items = items
-		instance.has_more = has_more
-
 		return instance
 
 	def reload(self):
@@ -113,10 +129,7 @@ to the initial function which created the resultset."""
 		new_params[4] = new_params[4].copy()
 		new_params[4].update(kw)
 		new_params[4]['page'] = page
-
-		new_set = new_params[0].build(*new_params[1:])
-		new_set.page = page
-		return new_set
+		return new_params[0].build(*new_params[1:])
 
 	def fetch_extended(self, page):
 		"""Returns a new resultset containing data from this resultset AND from the specified page."""
@@ -124,7 +137,7 @@ to the initial function which created the resultset."""
 		extended = self + next
 
 		# max(0, ...) is so a non-zero, positive result for page is always found
-		return StackExchangeResultset(extended, self.build_info, next.has_more, page)
+		return StackExchangeResultset(extended, max(1, self.page - 1), self.pagesize + next.pagesize, self.build_info)
 
 	def fetch_next(self):
 		"""Returns the resultset of the data in the next page."""
@@ -146,7 +159,7 @@ to the initial function which created the resultset."""
 			yield obj
 
 		current = self
-		while current.has_more:
+		while not current.done:
 			for obj in current.items:
 				yield obj
 
@@ -156,6 +169,8 @@ to the initial function which created the resultset."""
 					return
 			except urllib2.HTTPError:
 				return
+
+	done = property(lambda s: len(s) == s.total)
 
 class NeedsAwokenError(Exception):
 	"""An error raised when an attempt is made to access a property of a lazy collection that requires the data to have been fetched,
@@ -216,7 +231,6 @@ class StackExchangeLazyObject(list):
 		raise NeedsAwokenError
 
 #### Hack, because I can't be bothered to fix my mistaking JSON's output for an object not a dict
-# (Si jeunesse savait, si vieillesse pouvait...)
 # Attrib: Eli Bendersky, http://stackoverflow.com/questions/1305532/convert-python-dict-to-object/1305663#1305663
 class DictObject:
     def __init__(self, entries):
@@ -227,30 +241,26 @@ class JSONMangler(object):
 
 	@staticmethod
 	def paginated_to_resultset(site, json, typ, collection, params):
-		# N.B.: We ignore the 'collection' parameter for now, given that it is
-		# no longer variable in v2.x, having been replaced by a generic field
-		# 'items'. To perhaps be removed completely at some later point.
+		page = json['page']
+		pagesize = json['pagesize']
 		items = []
-		
+
 		# create strongly-typed objects from the JSON items
-		for json_item in json['items']:
+		for json_item in json[collection]:
 			json_item['_params_'] = params[-1] # convenient access to the kw hash
 			items.append(typ(json_item, site))
 
-		rs = StackExchangeResultset(items, params, json['has_more'])
-		if 'total' in json:
-			rs.total = json['total']
-
+		rs = StackExchangeResultset(items, page, pagesize, params)
+		rs.total = json['total']
 		return rs
 
 	@staticmethod
 	def normal_to_resultset(site, json, typ, collection):
-		# the parameter 'collection' may be need in future, and was needed pre-2.0
-		return tuple([typ(x, site) for x in json['items']])
+		return tuple([typ(x, site) for x in json[collection]])
 
 	@classmethod
 	def json_to_resultset(cls, site, json, typ, collection, params=None):
-		if 'has_more' in json:
+		if 'page' in json:
 			# we have a paginated resultset
 			return cls.paginated_to_resultset(site, json, typ, collection, params)
 		else:

@@ -1,15 +1,44 @@
-import datetime, operator, time, urllib
+import operator, time, urllib
 from stackexchange.web import WebRequestManager
 from stackexchange.core import *
+from datetime import datetime
 
 # Site constants
 from stackexchange.sites import *
 
-def or_none(o, k):
-	try:
-		return getattr(o, k)
-	except:
-		return None
+##### Enums         ###
+class RevisionType(Enumeration):
+	SingleUser = 'single_user'
+	VoteBased  = 'vote_based'
+
+class Period(Enumeration):
+	AllTime, Month = 'all-time', 'month'
+
+class BadgeType(Enumeration):
+	"""Describes the rank or type of a badge: one of Bronze, Silver or Gold."""
+	Bronze, Silver, Gold = range(3)
+
+class TimelineEventType(Enumeration):
+	"""Denotes the type of a timeline event."""
+	_map = {'askoranswered': 'AskOrAnswered'}
+
+	Comment = 'comment'
+	AskOrAnswered = 'askoranswered'
+	Badge = 'badge'
+	Revision = 'revision'
+	Accepted = 'accepted'
+
+class PostType(Enumeration):
+	"""Denotes the type of a post: a question or an answer."""
+	Question, Answer = 'question', 'answer'
+
+class UserType(Enumeration):
+	"""Denotes the status of a user on a site: whether it is Anonymous, Unregistered, Registered or a Moderator."""
+	Anonymous = 'anonymous'
+	Registered = 'registered'
+	Unregistered = 'unregistered'
+	Moderator = 'moderator'
+
 
 ##### Statistics    ###
 class Statistics(JSONModel):
@@ -23,63 +52,47 @@ class Statistics(JSONModel):
 class Answer(JSONModel):
 	"""Describes an answer on a StackExchange site."""
 
-	transfer = ('accepted', 'locked_date', 'question_id', 'up_vote_count', 'down_vote_count', 'view_count', 'score',
-		'community_owned', 'title', 'body')
+	transfer = ('accepted', 'locked_date', 'question_id', 'up_vote_count', 'down_vote_count', 'view_count', 'score', 'community_owned', 'title', 'body', ('creation_date', datetime), ('last_edit_date', datetime), ('last_activity_date', datetime))
+	alias = {'id': 'answer_id'}
 
 	def _extend(self, json, site):
-		self.id = json.answer_id
-
-		if not hasattr(json, '_params_'):
-			comment = False
-		else:
-			comment = ('comment' in json._params_ and json._params_['comment'])
-
-		answer_comments_url = 'answers/%d/comments' % self.id
-		self.comments = site.build_from_snippet(json.comments, Comment) if comment else StackExchangeLazySequence(Comment, None, site, answer_comments_url, self._up('comments'))
+		comment = hasattr(json, '_params_') and json._params_.get('comment', False)
+		self.comments = site.build_from_snippet(json.comments, Comment) if comment else StackExchangeLazySequence(Comment, None, site, json.answer_comments_url, self._up('comments'))
 
 		self._question, self._owner = None, None
 		if hasattr(json, 'owner'):
-			self.owner_id = json.owner.get('user_id')
+			self.owner_id = json.owner['user_id']
 			self.owner_info = tuple(json.owner.values())
 
-		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-
-		if hasattr(json, 'last_edit_date'):
-			self.last_edit_date = datetime.date.fromtimestamp(json.last_edit_date)
-		if hasattr(json, 'last_activity_date'):
-			self.last_activity_date = datetime.date.fromtimestamp(json.last_activity_date)
-
 		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
-
-		if hasattr(self, 'up_vote_count') and hasattr(self, 'down_vote_count'):
-			self.votes = (self.up_vote_count, self.down_vote_count)
-
+		self.votes = (self.up_vote_count, self.down_vote_count)
 		self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.question_id) + '/' + str(self.id) + '#' + str(self.id)
 
-	def _get_user(self, id):
+	@property
+	def owner(self, id):
 		if self._owner is None:
 			self._owner = self.site.user(id)
 		return self._owner
 
-	def _set_user(self, ob):
+	@owner.setter
+	def _set_owner(self, ob):
 		self._owner = ob
 
-	def _get_quest(self, id):
+	@property
+	def question(self, id):
 		if self._question is None:
 			self._question = self.site.question(id)
 		return self._question
 
-	def _set_quest(self, ob):
+	@question.setter
+	def _set_question(self, ob):
 		self._question = ob
-
-	question = property(_get_quest, _set_quest)
-	owner = property(_get_user, _set_user)
 
 	def fetch_callback(self, _, site):
 		return site.answer(self.id)
 
 	def __unicode__(self):
-		return u'Answer %d' % self.id
+		return u'Answer %d [%s]' % (self.id, self.title)
 
 	def __str__(self):
 		return str(unicode(self))
@@ -89,28 +102,19 @@ class Answer(JSONModel):
 
 class Question(JSONModel):
 	"""Describes a question on a StackExchange site."""
-	transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count', 'view_count', 'score', 'community_owned', 'title', 'body')
+	transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count', 'view_count', 'score', 'community_owned', 'title', 'body', 'answer_count', ('creation_date', datetime), ('last_activity_date', datetime))
+	alias = {'id': 'question_id', 'comments_url': 'question_comments_url', 'answers_url': 'question_answers_url', 'accepted_answer_id': 'accepted_answer_id'}
 
 	def _extend(self, json, site):
-		self.id = json.question_id
-
-		timeline_url = 'questions/%d/timeline' % self.id
-		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, timeline_url, self._up('timeline'))
+		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.question_timeline_url, self._up('timeline'))
 		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
-
-		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-
-		comments_url = 'questions/%d/comments' % self.id
-		self.comments = StackExchangeLazySequence(Comment, None, site, comments_url, self._up('comments'))
-
-		self.answers_url = 'questions/%d/answers' % self.id
 
 		if hasattr(json, 'answers'):
 			self.answers = [Answer(x, site) for x in json.answers]
 		else:
 			self.answers = []
 
-		if hasattr(json, 'owner') and 'user_id' in json.owner:
+		if hasattr(json, 'owner'):
 			self.owner_id = json.owner['user_id']
 
 			owner_dict = dict(json.owner)
@@ -136,13 +140,10 @@ class Question(JSONModel):
 
 class Comment(JSONModel):
 	"""Describes a comment to a question or answer on a StackExchange site."""
+	transfer = ('post_id', 'score', 'edit_count', 'body', ('creation_date', datetime), ('post_type', PostType))
+	alias = {'id': 'comment_id'}
 
-	transfer = ('post_id', 'score', 'edit_count', 'body')
 	def _extend(self, json, site):
-		self.id = json.comment_id
-
-		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-
 		if hasattr(json, 'owner'):
 			self.owner_id = json.owner['owner_id'] if 'owner_id' in json.owner else json.owner['user_id']
 			self.owner = User.partial(lambda self: self.site.user(self.id), site, {
@@ -163,9 +164,8 @@ class Comment(JSONModel):
 				'reputation': json.reply_to['reputation'],
 				'email_hash': json.reply_to['email_hash']})
 
-		self.post_type = PostType.from_string(json.post_type)
-
-	def _get_post(self):
+	@property
+	def post(self):
 		if self.post_type == PostType.Question:
 			return self.site.question(self.post_id)
 		elif self.post_type == PostType.Answer:
@@ -173,26 +173,16 @@ class Comment(JSONModel):
 		else:
 			return None
 
-	post = property(_get_post)
-
 	def __unicode__(self):
 		return u'Comment ' + str(self.id)
 	def __str__(self):
 		return str(unicode(self))
 
 #### Revisions #
-class RevisionType(Enumeration):
-	SingleUser = 'single_user'
-	VoteBased  = 'vote_based'
-
 class PostRevision(JSONModel):
-	transfer = ('body', 'comment', 'is_question', 'is_rollback', 'last_body', 'last_title', 'revision_guid',
-				'revision_number', 'title', 'set_community_wiki', 'post_id', 'last_tags', 'tags')
+	transfer = ('body', 'comment', 'is_question', 'is_rollback', 'last_body', 'last_title', 'revision_guid', 'revision_number', 'title', 'set_community_wiki', 'post_id', 'last_tags', 'tags', ('creation_date', datetime), ('revision_type', RevisionType))
 
 	def _extend(self, json, site):
-		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-		self.revision_type = RevisionType.from_string(json.revision_type)
-
 		part = json.user
 		self.user = User.partial(lambda self: self.site.user(self.id), site, {
 			'id': part['user_id'],
@@ -202,41 +192,33 @@ class PostRevision(JSONModel):
 			'email_hash': part['email_hash']
 		})
 
-	def _get_post(self):
+	@property
+	def post(self):
 		if self.is_question:
 			return self.site.question(self.post_id)
 		else:
 			return self.site.answer(self.post_id)
-	post = property(_get_post)
 
 	# The SE API seems quite inconsistent in this regard; the other methods give a post_type in their JSON
-	def _get_post_type(self):
+	@property
+	def post_type(self):
 		return PostType.Question if self.is_question else PostType.Answer
-	post_type = property(_get_post_type)
 
 	def __repr__(self):
 		return '<Revision %d of %s%d>' % (self.revision_number, 'Q' if self.is_question else 'A', self.post_id)
 
 ##### Tags #####
 class TagSynonym(JSONModel):
-	transfer = ('from_tag', 'to_tag', 'applied_count')
-
-	def _extend(self, json, site):
-		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-		self.last_applied_date = datetime.date.fromtimestamp(json.last_applied_date)
+	transfer = ('from_tag', 'to_tag', 'applied_count', ('creation_date', datetime), ('last_applied_date', datetime))
 
 	def __repr__(self):
 		return "<TagSynonym '%s'->'%s'>" % (self.from_tag, self.to_tag)
 
 class TagWiki(JSONModel):
-	transfer = ('tag_name')
+	transfer = ('tag_name', ('body_last_edit_date', datetime), ('excerpt_last_edit_date', datetime))
+	alias = {'body': 'wiki_body', 'excerpt': 'wiki_excerpt'}
 
 	def _extend(self, json, site):
-		self.body = json.wiki_body
-		self.excerpt = json.wiki_excerpt
-		self.body_last_edit_date = datetime.date.fromtimestamp(json.body_last_edit_date)
-		self.excerpt_last_edit_date = datetime.date.fromtimestamp(json.excerpt_last_edit_date)
-
 		body_editor = dict(json.last_body_editor)
 		body_editor['id'] = body_editor['user_id']
 		del body_editor['user_id']
@@ -246,9 +228,6 @@ class TagWiki(JSONModel):
 		excerpt_editor['id'] = excerpt_editor['user_id']
 		del excerpt_editor['user_id']
 		self.last_excerpt_editor = User.partial(lambda s: s.site.user(self.id), site, excerpt_editor)
-
-class Period(Enumeration):
-	AllTime, Month = 'all-time', 'month'
 
 class TopUser(JSONModel):
 	transfer = ('score', 'post_count')
@@ -265,7 +244,7 @@ class TopUser(JSONModel):
 class Tag(JSONModel):
 	transfer = ('name', 'count', 'fulfills_required')
 	# Hack so that Site.vectorise() works correctly
-	id = property(lambda self: self.name)
+	alias = {'name': 'id'}
 
 	def _extend(self, json, site):
 		self.synonyms = StackExchangeLazySequence(TagSynonym, None, site, 'tags/%s/synonyms' % self.name, self._up('synonyms'), 'tag_synonyms')
@@ -278,19 +257,13 @@ class Tag(JSONModel):
 		return self.site.build('tags/%s/top-answerers/%s' % (self.name, period), TopUser, 'top_users', kw)
 
 ##### Users ####
-class BadgeType(Enumeration):
-	"""Describes the rank or type of a badge: one of Bronze, Silver or Gold."""
-	Bronze, Silver, Gold = range(3)
-
 class Badge(JSONModel):
 	"""Describes a badge awardable on a StackExchange site."""
-
 	transfer = ('name', 'description', 'award_count', 'tag_based')
-	def _extend(self, json, site):
-		self.id = json.badge_id
+	alias = {'id': 'badge_id'}
 
-		badges_recipients_url = 'badges/%d/recipients' % self.id
-		self.recipients = StackExchangeLazySequence(User, None, site, badges_recipients_url, self._up('recipients'))
+	def _extend(self, json, site):
+		self.recipients = StackExchangeLazySequence(User, None, site, json.badges_recipients_url, self._up('recipients'))
 
 	def __str__(self):
 		return self.name
@@ -299,72 +272,41 @@ class Badge(JSONModel):
 
 class RepChange(JSONModel):
 	"""Describes an event which causes a change in reputation."""
+	transfer = ('user_id', 'post_id', 'post_type', 'title', 'positive_rep', 'negative_rep', ('on_date', datetime))
 
-	transfer = ('user_id', 'post_id', 'post_type', 'title', 'positive_rep', 'negative_rep')
-	def _extend(self, json, site):
-		self.on_date = datetime.date.fromtimestamp(json.on_date)
-		self.score = self.positive_rep - self.negative_rep
+	@property
+	def score(self):
+		return self.positive_rep - self.negative_rep
 
 ## Timeline ##
-class TimelineEventType(Enumeration):
-	"""Denotes the type of a timeline event."""
-	_map = {'askoranswered': 'AskOrAnswered'}
-
-	Comment = 'comment'
-	AskOrAnswered = 'askoranswered'
-	Badge = 'badge'
-	Revision = 'revision'
-	Accepted = 'accepted'
-
 class TimelineEvent(JSONModel):
-	transfer = ('user_id', 'post_id', 'comment_id', 'action', 'description', 'detail', 'comment_id')
+	transfer = ('user_id', 'post_id', 'comment_id', 'action', 'description', 'detail', 'comment_id', ('timeline_type', TimelineEventType))
 	_post_related = (TimelineEventType.AskOrAnswered, TimelineEventType.Revision, TimelineEventType.Comment)
 
 	def _extend(self, json, site):
-		self.timeline_type = TimelineEventType.from_string(json.timeline_type)
-
 		if self.timeline_type in self._post_related:
 			self.post_type = PostType.from_string(json.post_type)
 			self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 
-	def _get_post(self):
+	@property
+	def post(self):
 		if self.timeline_type in self._post_related:
 			if self.post_type == PostType.Question:
 				return self.site.question(self.post_id)
 			else:
 				return self.site.answer(self.post_id)
-		else:
-			return None
 
-	def _get_comment(self):
+	@property
+	def comment(self):
 		if self.timeline_type == TimelineEventType.Comment:
 			return self.site.comment(self.comment_id)
-		else:
-			return None
 
-	def _get_badge(self):
+	@property
+	def badge(self):
 		if self.timeline_type == TimelineEventType.Badge:
-			return self.site.badge(name=self.description)
-		else:
-			return None
-
-	post = property(_get_post)
-	comment = property(_get_comment)
-	badge = property(_get_badge)
+			return self.site.badge(name = self.description)
 
 ##############
-
-class PostType(Enumeration):
-	"""Denotes the type of a post: a question or an answer."""
-	Question, Answer = 'question', 'answer'
-
-class UserType(Enumeration):
-	"""Denotes the status of a user on a site: whether it is Anonymous, Unregistered, Registered or a Moderator."""
-	Anonymous = 'anonymous'
-	Registered = 'registered'
-	Unregistered = 'unregistered'
-	Moderator = 'moderator'
-
 class FormattedReputation(int):
 	def format(rep):
 		"""Formats the reputation score like it is formatted on the sites. Heavily based on CMS' JavaScript implementation at
@@ -388,60 +330,31 @@ class TopTag(JSONModel):
 
 class User(JSONModel):
 	"""Describes a user on a StackExchange site."""
+	transfer = ('display_name', 'email_hash', 'age', 'website_url', 'location', 'about_me', 'view_count', 'up_vote_count', 'down_vote_count', 'association_id', ('user_type', UserType), ('creation_date', datetime), ('last_access_date', datetime), ('reputation', FormattedReputation))
+	alias = {'id': 'user_id', 'type': 'user_type'}
 
-	transfer = ('display_name', 'email_hash', 'age', 'website_url', 'location', 'about_me',
-		'view_count', 'up_vote_count', 'down_vote_count', 'account_id')
 	def _extend(self, json, site):
-		self.id = json.user_id
-		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-		self.last_access_date = datetime.date.fromtimestamp(json.last_access_date)
-		self.reputation = FormattedReputation(json.reputation)
-
-		# for compatibility reasons; this field name changed in v2.x
-		self.association_id = json.account_id
-
-		user_questions_url = 'users/%d/questions' % self.id
-		question_count = or_none(json, 'question_count')
-		self.questions = StackExchangeLazySequence(Question, question_count, site, user_questions_url, self._up('questions'))
-
-		user_favorites_url = 'users/%d/favorites' % self.id
-		self.favorites = StackExchangeLazySequence(Question, None, site, user_favorites_url, self._up('favorites'), 'questions')
-
+		self.questions = StackExchangeLazySequence(Question, json.question_count, site, json.user_questions_url, self._up('questions'))
 		self.no_answers_questions = StackExchangeLazySequence(Question, None, site, 'users/%d/questions/no-answers' % self.id, self._up('no_answers_questions'), 'questions')
 		self.unanswered_questions = StackExchangeLazySequence(Question, None, site, 'users/%d/questions/unanswered' % self.id, self._up('unanswered_questions'), 'questions')
 		self.unaccepted_questions = StackExchangeLazySequence(Question, None, site, 'users/%d/questions/unaccepted' % self.id, self._up('unaccepted_questions'), 'questions')
+		self.favorites = StackExchangeLazySequence(Question, None, site, json.user_favorites_url, self._up('favorites'), 'questions')
 
-		user_answers_url = 'users/%d/answers' % self.id
-		answer_count = or_none(json, 'answer_count')
-		self.answers = StackExchangeLazySequence(Answer, answer_count, site, user_answers_url, self._up('answers'))
-
+		self.answers = StackExchangeLazySequence(Answer, json.answer_count, site, json.user_answers_url, self._up('answers'))
 		# Grr, American spellings. Using them for consistency with official API.
-		user_tags_url = 'users/%d/tags' % self.id
-		self.tags = StackExchangeLazySequence(Tag, None, site, user_tags_url, self._up('tags'))
+		self.tags = StackExchangeLazySequence(Tag, None, site, json.user_tags_url, self._up('tags'))
+		self.badges = StackExchangeLazySequence(Badge, None, site, json.user_badges_url, self._up('badges'))
+		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, json.user_timeline_url, self._up('timeline'), 'user_timelines')
+		self.reputation_detail = StackExchangeLazySequence(RepChange, None, site, json.user_reputation_url, self._up('reputation_detail'))
 
-		user_badges_url = 'users/%d/badges' % self.id
-		self.badges = StackExchangeLazySequence(Badge, None, site, user_badges_url, self._up('badges'))
-
-		user_timeline_url = 'users/%d/timeline' % self.id
-		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, user_timeline_url, self._up('timeline'), 'user_timelines')
-
-		user_reputation_url = 'users/%d/reputation' % self.id
-		self.reputation_detail = StackExchangeLazySequence(RepChange, None, site, user_reputation_url, self._up('reputation_detail'))
-
-		user_mentioned_url = 'users/%d/mentioned' % self.id
-		self.mentioned = StackExchangeLazySequence(Comment, None, site, user_mentioned_url, self._up('mentioned'), 'comments')
-
-		user_comments_url = 'users/%d/comments' % self.id
-		self.comments = StackExchangeLazySequence(Comment, None, site, user_comments_url, self._up('comments'))
+		self.mentioned = StackExchangeLazySequence(Comment, None, site, json.user_mentioned_url, self._up('mentioned'), 'comments')
+		self.comments = StackExchangeLazySequence(Comment, None, site, json.user_comments_url, self._up('comments'))
+		self.mentioned = StackExchangeLazySequence(Comment, None, site, 'users/%d/mentioned' % self.id, self._up('mentioned'))
 
 		self.top_answer_tags = StackExchangeLazySequence(TopTag, None, site, 'users/%d/top-answer-tags' % self.id, self._up('top_answer_tags'), 'top_tags')
 		self.top_question_tags = StackExchangeLazySequence(TopTag, None, site, 'users/%d/top-question-tags' % self.id, self._up('top_question_tags'), 'top_tags')
 
-		if hasattr(self, 'up_vote_count') and hasattr(self, 'down_vote_count'):
-			self.vote_counts = (self.up_vote_count, self.down_vote_count)
-
-		self.type = Enumeration.from_string(json.user_type, UserType) if hasattr(json, 'user_type') else None
-
+		self.vote_counts = (self.up_vote_count, self.down_vote_count)
 
 		gold = json.badge_counts['gold'] if 'gold' in json.badge_counts else 0
 		silver = json.badge_counts['silver'] if 'silver' in json.badge_counts else 0
@@ -496,30 +409,6 @@ class QuestionsQuery(object):
 			kw['body'] = 'true'
 		if self.site.include_comments:
 			kw['comments'] = 'true'
-
-		# for API v2.x, the comments, body and answers parameters no longer
-		# exist; instead, we have to use filters. for now, take the easy way
-		# out and just rewrite them in terms of the new filters.
-		if 'filter' not in kw:
-			filter_name = '_'
-
-			if kw.get('body'):
-				filter_name += 'b'
-				del kw['body']
-			if kw.get('comments'):
-				filter_name += 'c'
-				del kw['comments']
-			if kw.get('answers'):
-				filter_name += 'a'
-				del kw['answers']
-
-			if filter_name == '_ca':
-				# every other compatibility filter name works in the above
-				# order except this one...
-				kw['filter'] = '_ac'
-			elif filter_name != '_':
-				kw['filter'] = filter_name
-
 
 	def __call__(self, ids=None, user_id=None, **kw):
 		self.check(kw)
@@ -582,7 +471,7 @@ through here."""
 	def __init__(self, domain, app_key=None, cache=1800):
 		self.domain = domain
 		self.app_key = app_key
-		self.api_version = '2.1'
+		self.api_version = '1.1'
 
 		self.impose_throttling = False
 		self.throttle_stop = True
@@ -590,14 +479,7 @@ through here."""
 
 		self.include_body = False
 		self.include_comments = False
-
-		# In API v2.x, we generally don't get given api. at the start of these things, nor are they
-		# strictly domains in many cases. We continue to accept api.* names for compatibility.
-		domain_components = self.domain.split('.')
-		if domain_components[0] == 'api':
-			self.root_domain = '.'.join(domain_components[1:])
-		else:
-			self.root_domain = domain
+		self.root_domain = '.'.join(self.domain.split('.')[1:])
 
 	URL_Roots = {
 		User: 'users/%s',
@@ -609,7 +491,7 @@ through here."""
 
 	def _kw_to_str(self, ob):
 		try:
-			if isinstance(ob, datetime.datetime):
+			if isinstance(ob, datetime):
 				return str(time.mktime(ob.timetuple()))
 			elif isinstance(ob, basestring):
 				return ob
@@ -620,8 +502,7 @@ through here."""
 			return str(ob).lower()
 
 	def _request(self, to, params):
-		url = 'http://api.stackexchange.com/' + self.api_version + '/' + to
-		params['site'] = self.root_domain
+		url = 'http://' + self.domain + '/' + self.api_version + '/' + to
 
 		new_params = {}
 		for k, v in params.iteritems():
@@ -639,10 +520,9 @@ through here."""
 
 		json, info = request_mgr.json_request(url, new_params)
 
-		if 'quota_remaining' in json and 'quota_max' in json:
-			self.rate_limit = (json['quota_remaining'], json['quota_max'])
-			self.requests_used = self.rate_limit[1] - self.rate_limit[0]
-			self.requests_left = self.rate_limit[0]
+		self.rate_limit = (int(info.getheader('X-RateLimit-Current')), int(info.getheader('X-RateLimit-Max')))
+		self.requests_used = self.rate_limit[1] - self.rate_limit[0]
+		self.requests_left = self.rate_limit[0]
 
 		return json
 
@@ -700,7 +580,7 @@ through here."""
 	def users(self, ids=[], **kw):
 		"""Retrieves a list of the users with the IDs specified in the `ids' parameter."""
 		return self._get(User, ids, 'users', kw)
-	
+
 	def users_by_name(self, name, **kw):
 		kw['filter'] = name
 		return self.users(**kw)
