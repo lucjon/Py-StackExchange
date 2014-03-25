@@ -7,7 +7,7 @@ import htmlentitydefs, re
 QUESTION_ID = 4
 ANSWER_ID = 98
 USER_ID = 23901
-API_KEY = 'pXlviKYs*UZIwKLPwJGgpg(('
+API_KEY = '1_9Gj-egW0q_k1JaweDG8Q'
 
 _l = logging.getLogger(__name__)
 
@@ -52,11 +52,6 @@ class DataTests(unittest.TestCase):
 		a = self.site.answer(ANSWER_ID, body=True)
 		self.assertTrue(hasattr(q, 'body'))
 		self.assertNotEqual(q.body, None)
-
-	def test_stackauth_site_types(self):
-		s = stackauth.StackAuth()
-		for site in s.sites():
-			self.assertTrue(site.site_type in {stackauth.SiteType.MainSite, stackauth.SiteType.MetaSite})
 	
 	def test_stackauth_site_instantiate(self):
 		for defn in stackauth.StackAuth().sites():
@@ -101,7 +96,7 @@ class PlumbingTests(unittest.TestCase):
 		b_search = b.search(intitle='vim', pagesize=100)
 
 		# (We demonstrate that the second search has a second page.)
-		self.assertEqual(len(b_search.fetch_next()), 100)
+		self.assertTrue(len(b_search.fetch_next()) > 0)
 
 		# Reset the searches.
 		a_search = a.search(intitle='vim', pagesize=100)
@@ -113,7 +108,7 @@ class PlumbingTests(unittest.TestCase):
 
 		# Try get the next page of the second search. It will be empty.
 		# Here's the bug.
-		self.assertEqual(len(b_search.fetch_next()), 100)
+		self.assertTrue(len(b_search.fetch_next()) > 0)
 
 
 if __name__ == '__main__':
