@@ -62,12 +62,12 @@ class DataTests(unittest.TestCase):
 		self.assertNotEqual(first_comment, None)
 		self.assertTrue(first_comment.body)
 	
-	def test_question_revisions(self):
-		q = self.site.question(4673436)
-		q.revisions.fetch()
-		first_revision = q.revisions[0]
+	def test_post_revisions(self):
+		a = self.site.answer(4673436)
+		a.revisions.fetch()
+		first_revision = a.revisions[0]
 		self.assertNotEqual(first_revision, None)
-		self.assertEqual(first_revision.post_id, q.id)
+		self.assertEqual(first_revision.post_id, a.id)
 
 	def test_has_body(self):
 		q = self.site.question(QUESTION_ID, body=True)
@@ -77,6 +77,57 @@ class DataTests(unittest.TestCase):
 		a = self.site.answer(ANSWER_ID, body=True)
 		self.assertTrue(hasattr(q, 'body'))
 		self.assertNotEqual(q.body, None)
+	
+	def test_tag_synonyms(self):
+		syns = self.site.tag_synonyms()
+		self.assertTrue(len(syns) > 0)
+	
+	def test_tag_wiki(self):
+		tag = self.site.tag('javascript')
+		self.assertEqual(tag.name, 'javascript')
+		wiki = tag.wiki.fetch()
+		self.assertTrue(len(wiki.excerpt) > 0)
+	
+	def test_badge_name(self):
+		badge = self.site.badge(name = 'Nice Answer')
+		self.assertNotEqual(badge, None)
+		self.assertEqual(badge.name, 'Nice Answer')
+	
+	def test_badge_id(self):
+		badge = self.site.badge(23)
+		self.assertEqual(badge.name, 'Nice Answer')
+	
+	def test_rep_change(self):
+		user = self.site.user(41981)
+		user.reputation_detail.fetch()
+		recent_change = user.reputation_detail[0]
+		self.assertNotEqual(recent_change, None)
+		self.assertEqual(recent_change.user_id, user.id)
+
+	def test_timeline(self):
+		user = self.site.user(41981)
+		user.timeline.fetch()
+		event = user.timeline[0]
+		self.assertNotEqual(event, None)
+		self.assertEqual(event.user_id, user.id)
+	
+	def test_top_tag(self):
+		user = self.site.user(41981)
+
+		user.top_answer_tags.fetch()
+		answer_tag = user.top_answer_tags[0]
+		self.assertNotEqual(answer_tag, None)
+		self.assertTrue(answer_tag.answer_count > 0)
+
+		user.top_question_tags.fetch()
+		question_tag = user.top_question_tags[0]
+		self.assertNotEqual(question_tag, None)
+		self.assertTrue(question_tag.question_count > 0)
+	
+	def test_privilege(self):
+		privileges = self.site.privileges()
+		self.assertTrue(len(privileges) > 0)
+		self.assertTrue(privileges[0].reputation > 0)
 
 	def test_stackauth_site_types(self):
 		s = stackauth.StackAuth()

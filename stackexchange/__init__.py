@@ -49,7 +49,7 @@ class Answer(JSONModel):
 		if hasattr(json, 'last_activity_date'):
 			self.last_activity_date = datetime.date.fromtimestamp(json.last_activity_date)
 
-		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
+		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'posts/%s/revisions' % self.id, self._up('revisions'), 'revisions')
 
 		if hasattr(self, 'up_vote_count') and hasattr(self, 'down_vote_count'):
 			self.votes = (self.up_vote_count, self.down_vote_count)
@@ -96,7 +96,7 @@ class Question(JSONModel):
 
 		timeline_url = 'questions/%d/timeline' % self.id
 		self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, timeline_url, self._up('timeline'))
-		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'revisions/%s' % self.id, self._up('revisions'), 'revisions')
+		self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'posts/%s/revisions' % self.id, self._up('revisions'), 'revisions')
 
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 
@@ -161,7 +161,7 @@ class Comment(JSONModel):
 				'user_type': Enumeration.from_string(json.reply_to['user_type'], UserType),
 				'display_name': json.reply_to['display_name'],
 				'reputation': json.reply_to['reputation'],
-				'email_hash': json.reply_to['email_hash']})
+				'profile_image': json.reply_to['profile_image']})
 
 		self.post_type = PostType.from_string(json.post_type)
 
@@ -199,7 +199,7 @@ class PostRevision(JSONModel):
 			'user_type': Enumeration.from_string(part['user_type'], UserType),
 			'display_name': part['display_name'],
 			'reputation': part['reputation'],
-			'email_hash': part['email_hash']
+			'profile_image': part['profile_image']
 		})
 
 	def _get_post(self):
@@ -223,29 +223,30 @@ class TagSynonym(JSONModel):
 
 	def _extend(self, json, site):
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-		self.last_applied_date = datetime.date.fromtimestamp(json.last_applied_date)
+		if hasattr(json, 'last_applied_date'):
+			self.last_applied_date = datetime.date.fromtimestamp(json.last_applied_date)
 
 	def __repr__(self):
 		return "<TagSynonym '%s'->'%s'>" % (self.from_tag, self.to_tag)
 
 class TagWiki(JSONModel):
-	transfer = ('tag_name')
+	transfer = ('tag_name', 'body', 'excerpt')
 
 	def _extend(self, json, site):
-		self.body = json.wiki_body
-		self.excerpt = json.wiki_excerpt
 		self.body_last_edit_date = datetime.date.fromtimestamp(json.body_last_edit_date)
 		self.excerpt_last_edit_date = datetime.date.fromtimestamp(json.excerpt_last_edit_date)
 
-		body_editor = dict(json.last_body_editor)
-		body_editor['id'] = body_editor['user_id']
-		del body_editor['user_id']
-		self.last_body_editor = User.partial(lambda s: s.site.user(self.id), site, body_editor)
+		if hasattr(json, 'last_body_editor'):
+			body_editor = dict(json.last_body_editor)
+			body_editor['id'] = body_editor['user_id']
+			del body_editor['user_id']
+			self.last_body_editor = User.partial(lambda s: s.site.user(self.id), site, body_editor)
 
-		excerpt_editor = dict(json.last_excerpt_editor)
-		excerpt_editor['id'] = excerpt_editor['user_id']
-		del excerpt_editor['user_id']
-		self.last_excerpt_editor = User.partial(lambda s: s.site.user(self.id), site, excerpt_editor)
+		if hasattr(json, 'last_excerpt_editor'):
+			excerpt_editor = dict(json.last_excerpt_editor)
+			excerpt_editor['id'] = excerpt_editor['user_id']
+			del excerpt_editor['user_id']
+			self.last_excerpt_editor = User.partial(lambda s: s.site.user(self.id), site, excerpt_editor)
 
 class Period(Enumeration):
 	AllTime, Month = 'all-time', 'month'
@@ -303,7 +304,8 @@ class RepChange(JSONModel):
 	transfer = ('user_id', 'post_id', 'post_type', 'title', 'positive_rep', 'negative_rep')
 	def _extend(self, json, site):
 		self.on_date = datetime.date.fromtimestamp(json.on_date)
-		self.score = self.positive_rep - self.negative_rep
+		if hasattr(json, 'positive_rep') and hasattr(json, 'negative_rep'):
+			self.score = json.positive_rep - json.negative_rep
 
 ## Timeline ##
 class TimelineEventType(Enumeration):
@@ -389,7 +391,7 @@ class TopTag(JSONModel):
 class User(JSONModel):
 	"""Describes a user on a StackExchange site."""
 
-	transfer = ('display_name', 'email_hash', 'age', 'website_url', 'location', 'about_me',
+	transfer = ('display_name', 'profile_image', 'age', 'website_url', 'location', 'about_me',
 		'view_count', 'up_vote_count', 'down_vote_count', 'account_id', 'profile_image')
 	def _extend(self, json, site):
 		self.id = json.user_id
@@ -458,8 +460,8 @@ class User(JSONModel):
 
 		self.url = 'http://' + self.site.root_domain + '/users/' + str(self.id)
 
-	def has_privelege(self, privelege):
-		return self.reputation >= privelege.reputation
+	def has_privilege(self, privilege):
+		return self.reputation >= privilege.reputation
 
 	def _get_real_tag(self, tag):
 		return tag.name if isinstance(tag, Tag) else tag
@@ -481,7 +483,7 @@ class User(JSONModel):
 	def __repr__(self):
 		return "<User '%s' (%d) @ %x>" % (self.display_name, self.id, id(self))
 
-class Privelege(JSONModel):
+class Privilege(JSONModel):
 	transfer = ('short_description', 'description', 'reputation')
 
 
@@ -769,22 +771,25 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		else:
 			return self._get(Badge, ids, 'users', kw)
 
-	def badge(self, nid, name=None, **kw):
+	def badge(self, nid = None, name=None, **kw):
 		"""Returns an object representing the badge with the ID 'nid', or with the name passed in as name=."""
-		if name is None:
-			b, = self.badges((nid,), kw)
+		if nid is not None and name is None:
+			b, = self.build('badges/%d' % nid, Badge, 'badges', kw)
 			return b
-		else:
+		elif nid is None and name is not None:
 			# We seem to need to get all badges and find it by name. Sigh.
-			all_badges = self.badges()
+			kw['inname'] = name
+			all_badges = self.build('badges', Badge, 'badges', kw)
 			for badge in all_badges:
 				if badge.name == name:
 					return badge
 			return None
+		else:
+			raise KeyError('Supply exactly one of the following: a badge ID, a badge name')
 
-	def privileges(self):
+	def privileges(self, **kw):
 		"""Returns all the privileges a user can have on the site."""
-		return self.build('privileges', Privelege, 'privileges', kw)
+		return self.build('privileges', Privilege, 'privileges', kw)
 
 	def all_nontag_badges(self, **kw):
 		"""Returns the set of all badges which are not tag-based."""
@@ -827,8 +832,7 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 		return self.build('tags', Tag, 'tags', kw)
 
 	def tag(self, tag, **kw):
-		kw['filter'] = tag
-		return self.build('tags', Tag, 'tags', kw)[0]
+		return self.build('tags/%s/info' % tag, Tag, 'tags', kw)[0]
 
 	def tag_synonyms(self, **kw):
 		return self.build('tags/synonyms', TagSynonym, 'tag_synonyms', kw)
