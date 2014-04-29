@@ -170,12 +170,13 @@ class StackExchangeLazySequence(list):
 	"""Provides a sequence which *can* contain extra data available on an object. It is 'lazy' in the sense that data is only fetched when
 required - not on object creation."""
 
-	def __init__(self, m_type, count, site, url, fetch=None, collection=None):
+	def __init__(self, m_type, count, site, url, fetch=None, collection=None, **kw):
 		self.m_type = m_type
 		self.count = count
 		self.site = site
 		self.url = url
 		self.fetch_callback = fetch
+		self.kw = kw
 		self.collection = collection if collection != None else self._collection(url)
 
 	def _collection(self, c):
@@ -187,8 +188,12 @@ required - not on object creation."""
 		else:
 			raise NeedsAwokenError(self)
 
-	def fetch(self, **kw):
+	def fetch(self, **direct_kw):
 		"""Fetch, from the API, the data this sequence is meant to hold."""
+		# If we have any default parameters, include them, but overwrite any
+		# passed in here directly.
+		kw = dict(self.kw)
+		kw.update(direct_kw)
 
 		res = self.site.build(self.url, self.m_type, self.collection, kw)
 		if self.fetch_callback != None:
@@ -220,7 +225,7 @@ class StackExchangeLazyObject(list):
 # Attrib: Eli Bendersky, http://stackoverflow.com/questions/1305532/convert-python-dict-to-object/1305663#1305663
 class DictObject:
     def __init__(self, entries):
-        self.__dict__.update(entries)
+		self.__dict__.update(entries)
 
 class JSONMangler(object):
 	"""This class handles all sorts of random JSON-handling stuff"""

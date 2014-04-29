@@ -35,7 +35,7 @@ class Answer(JSONModel):
 			comment = ('comment' in json._params_ and json._params_['comment'])
 
 		answer_comments_url = 'answers/%d/comments' % self.id
-		self.comments = site.build_from_snippet(json.comments, Comment) if comment else StackExchangeLazySequence(Comment, None, site, answer_comments_url, self._up('comments'))
+		self.comments = site.build_from_snippet(json.comments, Comment) if comment else StackExchangeLazySequence(Comment, None, site, answer_comments_url, self._up('comments'), filter = '!-*7AsUyrEan0')
 
 		self._question, self._owner = None, None
 		if hasattr(json, 'owner'):
@@ -101,7 +101,7 @@ class Question(JSONModel):
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 
 		comments_url = 'questions/%d/comments' % self.id
-		self.comments = StackExchangeLazySequence(Comment, None, site, comments_url, self._up('comments'))
+		self.comments = StackExchangeLazySequence(Comment, None, site, comments_url, self._up('comments'), filter = '!-*7AsUyrEan0')
 
 		self.answers_url = 'questions/%d/answers' % self.id
 
@@ -150,7 +150,7 @@ class Comment(JSONModel):
 				'user_type': Enumeration.from_string(json.owner['user_type'], UserType),
 				'display_name': json.owner['display_name'],
 				'reputation': json.owner['reputation'],
-				'email_hash': json.owner['email_hash']})
+				'profile_image': json.owner['profile_image']})
 		else:
 			self.owner = None
 
@@ -390,7 +390,7 @@ class User(JSONModel):
 	"""Describes a user on a StackExchange site."""
 
 	transfer = ('display_name', 'email_hash', 'age', 'website_url', 'location', 'about_me',
-		'view_count', 'up_vote_count', 'down_vote_count', 'account_id')
+		'view_count', 'up_vote_count', 'down_vote_count', 'account_id', 'profile_image')
 	def _extend(self, json, site):
 		self.id = json.user_id
 		self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
@@ -579,12 +579,12 @@ class Site(object):
 	"""Stores information and provides methods to access data on a StackExchange site. This class is the 'root' of the API - all data is accessed
 through here."""
 
-	def __init__(self, domain, app_key=None, cache=1800):
+	def __init__(self, domain, app_key=None, cache=1800, impose_throttling=False):
 		self.domain = domain
 		self.app_key = app_key
-		self.api_version = '2.1'
+		self.api_version = '2.2'
 
-		self.impose_throttling = False
+		self.impose_throttling = impose_throttling
 		self.throttle_stop = True
 		self.cache_options = {'cache': False} if cache == 0 else {'cache': True, 'cache_age': cache}
 

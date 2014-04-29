@@ -12,7 +12,7 @@ API_KEY = 'pXlviKYs*UZIwKLPwJGgpg(('
 _l = logging.getLogger(__name__)
 
 def _setUp(self):
-	self.site = stackexchange.Site(stackexchange.StackOverflow, API_KEY)
+	self.site = stackexchange.Site(stackexchange.StackOverflow, API_KEY, impose_throttling = True)
 
 stackexchange.web.WebRequestManager.debug = True
 
@@ -43,6 +43,31 @@ class DataTests(unittest.TestCase):
 
 	def test_fetch_answer(self):
 		s = self.site.answer(ANSWER_ID)
+
+	def test_fetch_answer_comment(self):
+		# First try the comments on an answer with lots of comments
+		# http://stackoverflow.com/a/22389702
+		s = self.site.answer(22389702)
+		s.comments.fetch()
+		first_comment = s.comments[0]
+		self.assertNotEqual(first_comment, None)
+		self.assertTrue(first_comment.body)
+
+	def test_fetch_question_comment(self):
+		# Now try a question
+		# http://stackoverflow.com/a/22342854
+		s = self.site.question(22342854)
+		s.comments.fetch()
+		first_comment = s.comments[0]
+		self.assertNotEqual(first_comment, None)
+		self.assertTrue(first_comment.body)
+	
+	def test_question_revisions(self):
+		q = self.site.question(4673436)
+		q.revisions.fetch()
+		first_revision = q.revisions[0]
+		self.assertNotEqual(first_revision, None)
+		self.assertEqual(first_revision.post_id, q.id)
 
 	def test_has_body(self):
 		q = self.site.question(QUESTION_ID, body=True)
