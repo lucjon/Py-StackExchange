@@ -2,6 +2,8 @@
 # Saves me quite a bit of typing during interactive
 # testing sessions.
 # Just execute.
+import sys
+sys.path.append('.')
 
 from stackexchange import *
 from stackauth import *
