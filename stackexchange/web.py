@@ -1,6 +1,6 @@
 # stackweb.py - Core classes for web-request stuff
 
-import urllib2, httplib, datetime, operator, StringIO, gzip, time, urllib
+import urllib2, httplib, datetime, operator, StringIO, gzip, time, urllib, urlparse
 import datetime
 try:
 	import json
@@ -34,8 +34,10 @@ class WebRequestManager(object):
 		self.throttle_stop = throttle_stop
 		# Whether to use request caching.
 		self.do_cache = cache
-		# The time, in seconds, to cache a response
+		# The time, in seconds, for which to cache a response
 		self.cache_age = cache_age
+		# The time at which we should resume making requests after receiving a 'backoff' for each method
+		self.backoff_expires = {}
 	
 	# When we last made a request
 	window = datetime.datetime.now()
@@ -45,6 +47,11 @@ class WebRequestManager(object):
 	def debug_print(self, *p):
 		if WebRequestManager.debug:
 			print ' '.join([x if isinstance(x, str) else repr(x) for x in p])
+	
+	def canon_method_name(self, url):
+		# Take the URL relative to the domain, without initial / or parameters
+		parsed = urlparse.urlparse(url)
+		return '/'.join(parsed.path.split('/')[1:])
 
 	def request(self, url, params):
 		now = datetime.datetime.now()
@@ -73,17 +80,27 @@ class WebRequestManager(object):
 				return data
 
 		# Before we do the actual request, are we going to be throttled?
+		def halt(wait_time):
+			if self.throttle_stop:
+				raise TooManyRequestsError()
+			else:
+				# Wait the required time, plus a bit of extra padding time.
+				time.sleep(wait_time + 0.1)
+
 		if self.impose_throttling:
+			# We need to check if we've been told to back off
+			method = self.canon_method_name(url)
+			backoff_time = self.backoff_expires.get(method, None)
+			if backoff_time is not None and backoff_time >= now:
+				self.debug_print('backoff: %s until %s' % (method, backoff_time))
+				halt((now - backoff_time).seconds)
+
 			if (now - WebRequestManager.window).seconds >= 5:
 				WebRequestManager.window = now
 				WebRequestManager.num_requests = 0
 			WebRequestManager.num_requests += 1
 			if WebRequestManager.num_requests > 30:
-				if self.throttle_stop:
-					raise TooManyRequestsError()
-				else:
-					# Wait the required time, plus a bit of extra padding time.
-					time.sleep(5 - (WebRequestManager.window - now).seconds + 0.1)
+				halt(5 - (WebRequestManager.window - now).seconds)
 
 		# We definitely do need to go out to the internet, so make the real request
 		self.debug_print('R>', url)
@@ -120,5 +137,12 @@ class WebRequestManager(object):
 	
 	def json_request(self, to, params):
 		req = self.request(to, params)
-		return (json.loads(req.data), req.info)
+		parsed_result = json.loads(req.data)
+
+		# In API v2.x we now need to respect the 'backoff' warning
+		if 'backoff' in parsed_result:
+			method = self.canon_method_name(to)
+			self.backoff_expires[method] = datetime.datetime.now() + parsed_result[backoff]
+
+		return (parsed_result, req.info)
 
