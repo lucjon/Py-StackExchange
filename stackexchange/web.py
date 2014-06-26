@@ -1,5 +1,6 @@
 # stackweb.py - Core classes for web-request stuff
 
+from stackexchange.core import StackExchangeError
 import urllib2, httplib, datetime, operator, io, gzip, time, urllib, urlparse
 import datetime
 try:
@@ -108,14 +109,23 @@ class WebRequestManager(object):
 		
 		request.add_header('Accept-encoding', 'gzip')
 		req_open = urllib2.build_opener()
-		conn = req_open.open(request)
 
-		req_data = conn.read()
+		try:
+			conn = req_open.open(request)
+			info = conn.info()
+			req_data = conn.read()
+			error_code = 200
+		except urllib2.HTTPError as e:
+			# we'll handle the error response later
+			error_code = e.code
+			# a hack (headers is an undocumented property), but there's no sensible way to get them
+			info = getattr(e, 'headers', {})
+			req_data = e.read()
 
 		# Handle compressed responses.
 		# (Stack Exchange's API sends its responses compressed but intermediary
 		# proxies may send them to us decompressed.)
-		if conn.info().get('Content-Encoding') == 'gzip':
+		if info.get('Content-Encoding') == 'gzip':
 			data_stream = io.BytesIO(req_data)
 			gzip_stream = gzip.GzipFile(fileobj=data_stream)
 
@@ -123,9 +133,16 @@ class WebRequestManager(object):
 		else:
 			actual_data = req_data
 
-		info = conn.info()
-		conn.close()
+		# Check for errors
+		if error_code != 200:
+			try:
+				error_ob = json.loads(actual_data.decode('utf8'))
+			except:
+				raise StackExchangeError('Unrecognised error returned (HTTP code %d)' % error_code)
+			else:
+				raise StackExchangeError('%d: %s' % (error_ob.get('error_id', 0), error_ob.get('error_message', '')))
 
+		conn.close()
 		req_object = WebRequest(actual_data, info)
 
 		# Let's store the response in the cache
