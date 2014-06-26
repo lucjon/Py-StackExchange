@@ -1,6 +1,6 @@
 # stackweb.py - Core classes for web-request stuff
 
-import urllib2, httplib, datetime, operator, StringIO, gzip, time, urllib, urlparse
+import urllib2, httplib, datetime, operator, io, gzip, time, urllib, urlparse
 import datetime
 try:
 	import json
@@ -115,8 +115,8 @@ class WebRequestManager(object):
 		# Handle compressed responses.
 		# (Stack Exchange's API sends its responses compressed but intermediary
 		# proxies may send them to us decompressed.)
-		if conn.info().getheader('Content-Encoding') == 'gzip':
-			data_stream = StringIO.StringIO(req_data)
+		if conn.info().get('Content-Encoding') == 'gzip':
+			data_stream = io.BytesIO(req_data)
 			gzip_stream = gzip.GzipFile(fileobj=data_stream)
 
 			actual_data = gzip_stream.read()
@@ -137,7 +137,7 @@ class WebRequestManager(object):
 	
 	def json_request(self, to, params):
 		req = self.request(to, params)
-		parsed_result = json.loads(req.data)
+		parsed_result = json.loads(req.data.decode('utf8'))
 
 		# In API v2.x we now need to respect the 'backoff' warning
 		if 'backoff' in parsed_result:

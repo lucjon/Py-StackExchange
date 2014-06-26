@@ -224,7 +224,7 @@ class StackExchangeLazyObject(list):
 # (Si jeunesse savait, si vieillesse pouvait...)
 # Attrib: Eli Bendersky, http://stackoverflow.com/questions/1305532/convert-python-dict-to-object/1305663#1305663
 class DictObject:
-    def __init__(self, entries):
+	def __init__(self, entries):
 		self.__dict__.update(entries)
 
 class JSONMangler(object):

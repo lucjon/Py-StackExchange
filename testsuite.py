@@ -1,8 +1,12 @@
 import logging
 
-import stackauth, stackexchange, stackexchange.web, unittest
+import re, stackauth, stackexchange, stackexchange.web, unittest
 import stackexchange.sites as stacksites
-import htmlentitydefs, re
+# for Python 3 compatiblity
+try:
+    import htmlentitydefs
+except ImportError:
+    import html.entities as htmlentitydefs
 
 QUESTION_ID = 4
 ANSWER_ID = 98
