@@ -210,8 +210,8 @@ class StackExchangeLazyObject(list):
 #### Hack, because I can't be bothered to fix my mistaking JSON's output for an object not a dict
 # Attrib: Eli Bendersky, http://stackoverflow.com/questions/1305532/convert-python-dict-to-object/1305663#1305663
 class DictObject:
-    def __init__(self, entries):
-        self.__dict__.update(entries)
+	def __init__(self, entries):
+		self.__dict__.update(entries)
 
 class JSONMangler(object):
 	"""This class handles all sorts of random JSON-handling stuff"""

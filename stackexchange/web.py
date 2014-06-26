@@ -1,6 +1,6 @@
 # stackweb.py - Core classes for web-request stuff
 
-import urllib2, httplib, datetime, operator, StringIO, gzip, time, urllib
+import urllib2, httplib, datetime, operator, io, gzip, time, urllib, urlparse
 import datetime
 try:
 	import json
@@ -95,8 +95,8 @@ class WebRequestManager(object):
 		# Handle compressed responses.
 		# (Stack Exchange's API sends its responses compressed but intermediary
 		# proxies may send them to us decompressed.)
-		if conn.info().getheader('Content-Encoding') == 'gzip':
-			data_stream = StringIO.StringIO(req_data)
+		if conn.info().get('Content-Encoding') == 'gzip':
+			data_stream = io.BytesIO(req_data)
 			gzip_stream = gzip.GzipFile(fileobj=data_stream)
 
 			actual_data = gzip_stream.read()
@@ -117,5 +117,5 @@ class WebRequestManager(object):
 	
 	def json_request(self, to, params):
 		req = self.request(to, params)
-		return (json.loads(req.data), req.info)
+		return (json.loads(req.data.decode('utf8')), req.info)
 

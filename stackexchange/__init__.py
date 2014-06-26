@@ -607,12 +607,12 @@ through here."""
 		if allowed_types is not None and not hasattr(allowed_types, '__iter__'):
 			allowed_types = (allowed_types, )
 
-		if hasattr(lst, '__iter__'):
+		if isinstance(lst, basestring) or type(lst).__name__ == 'bytes':
+			return lst
+		elif hasattr(lst, '__iter__'):
 			return ';'.join([self.vectorise(x, or_of_type) for x in lst])
 		elif allowed_types is not None and any([isinstance(lst, typ) for typ in allowed_types]) and hasattr(lst, 'id'):
 			return str(lst.id)
-		elif isinstance(lst, basestring):
-			return lst
 		else:
 			return str(lst).lower()
 
