@@ -1,0 +1,14 @@
+#!/bin/bash
+
+function test_py2 {
+	python2 ./testsuite.py
+}
+
+function test_py3 {
+	rm -rf ./build
+	python3 setup.py build
+	cp testsuite.py ./build/lib*
+	( cd ./build/lib* && python3 testsuite.py )
+}
+
+test_py3 && test_py2

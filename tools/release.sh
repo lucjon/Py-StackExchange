@@ -2,7 +2,7 @@
 echo "Please don't run this as a user. This generates a new release for PyPI. Press ^C to exit or Enter to continue."
 read
 
-if ! python ./testsuite.py && [ "$IGNORE_TEST" != "yes" ]; then
+if ! tools/test && [ "$IGNORE_TEST" != "yes" ]; then
 	echo "The test suite failed. Fix it!"
 	exit 1
 fi
