@@ -14,7 +14,7 @@ if sys.version_info > (3, 0):
 setup(
 	name = 'py-stackexchange',
 	py_modules = ['stackexchange.core', 'stackexchange.sites', 'stackexchange.web', 'stackauth'],
-	version = '2.0',
+	version = '2.2',
 	description = 'A Python binding to the StackExchange (Stack Overflow, Server Fault, etc.) website APIs.',
 	author = 'Lucas Jones',
 	author_email = 'lucas@lucasjones.co.uk',
@@ -34,7 +34,7 @@ setup(
 		'Topic :: Software Development :: Libraries :: Python Modules',
 		'Topic :: Internet',
 	],
-	long_description = '''Update: a bug-fix release.
+        long_description = '''**IMPORTANT**: Py-StackExchange now targets version 2.x of the StackExchange API, which introduces some small but breaking changes --- in particular, you will need to register for a new API key. Read the wiki page https://github.com/lucjon/Py-StackExchange/wiki/Updating-to-v2.x for more information.
 
 Please see http://stackapps.com/questions/198/py-stackexchange-an-api-wrapper-for-python for a full description.''',
         **options
