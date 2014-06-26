@@ -140,9 +140,9 @@ class DataTests(unittest.TestCase):
 	
 	def test_stackauth_site_instantiate(self):
 		for defn in stackauth.StackAuth().sites():
-			site_ob = defn.get_site()
+			site_ob = defn.get_site(API_KEY)
 			# Do the same as test_fetch_answer() and hope we don't get an exception
-			defn.get_site().answer(ANSWER_ID)
+			defn.get_site(API_KEY).answer(ANSWER_ID)
 			# Only do it once!
 			break
 

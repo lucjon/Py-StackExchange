@@ -47,8 +47,8 @@ class SiteDefinition(JSONModel):
 		self.state = SiteState.from_string(fixed_state)
 		self.styling = DictObject(json.styling)
 	
-	def get_site(self, **kw):
-		return Site(self.api_site_parameter, **kw)
+	def get_site(self, *a, **kw):
+		return Site(self.api_site_parameter, *a, **kw)
 
 class Area51(object):
 	def __getattr__(self, attr):
