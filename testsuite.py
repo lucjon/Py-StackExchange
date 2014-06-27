@@ -2,6 +2,7 @@ import logging
 
 import re, stackauth, stackexchange, stackexchange.web, unittest
 import stackexchange.sites as stacksites
+from stackexchange.core import StackExchangeError
 # for Python 3 compatiblity
 try:
     import htmlentitydefs
@@ -162,6 +163,11 @@ class PlumbingTests(unittest.TestCase):
 		self.assertTrue(hasattr(stacksites, 'StackOverflow'))
 		self.assertTrue(hasattr(stacksites, 'ServerFault'))
 		self.assertTrue(hasattr(stacksites, 'SuperUser'))
+	
+	def test_error(self):
+		with self.assertRaises(StackExchangeError) as e:
+			self.site.error(401)
+		self.assertEqual(e.exception.code, 401)
 
 	def test_vectorise(self):
 		# check different types

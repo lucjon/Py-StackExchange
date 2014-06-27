@@ -80,7 +80,18 @@ class Enumeration(object):
 
 class StackExchangeError(Exception):
 	"""A generic error thrown on a bad HTTP request during a StackExchange API request."""
-	pass
+	UNKNOWN = -1
+
+	def __init__(self, code = UNKNOWN, name = None, message = None):
+		self.code = code
+		self.name = name
+		self.message = message
+	
+	def __str__(self):
+		if self.code == self.UNKNOWN:
+			return 'unrecognised error'
+		else:
+			return '%d [%s]: %s' % (self.code, self.name, self.message)
 
 
 class StackExchangeResultset(tuple):

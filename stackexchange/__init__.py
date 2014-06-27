@@ -623,15 +623,18 @@ through here."""
 
 	def _request(self, to, params):
 		url = 'http://api.stackexchange.com/' + self.api_version + '/' + to
-		params['site'] = self.root_domain
+		params['site'] = params.get('site', self.root_domain)
 
 		new_params = {}
 		for k, v in params.iteritems():
-			if k in ('fromdate', 'todate'):
+			if v is None:
+				pass
+			elif k in ('fromdate', 'todate'):
 				# bit of a HACKish workaround for a reported issue; force to an integer
 				new_params[k] = str(int(v))
 			else:
 				new_params[k] = self._kw_to_str(v)
+
 		if self.app_key != None:
 			new_params['key'] = self.app_key
 
@@ -836,6 +839,11 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 
 	def tag_synonyms(self, **kw):
 		return self.build('tags/synonyms', TagSynonym, 'tag_synonyms', kw)
+
+	def error(self, id, **kw):
+		# for some reason, the SE API couldn't possible just ignore site=
+		kw['site'] = None
+		return self._request('errors/%d' % id, kw)
 
 	def __add__(self, other):
 		if isinstance(other, Site):

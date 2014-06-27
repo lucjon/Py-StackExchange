@@ -138,9 +138,9 @@ class WebRequestManager(object):
 			try:
 				error_ob = json.loads(actual_data.decode('utf8'))
 			except:
-				raise StackExchangeError('Unrecognised error returned (HTTP code %d)' % error_code)
+				raise StackExchangeError()
 			else:
-				raise StackExchangeError('%d: %s' % (error_ob.get('error_id', 0), error_ob.get('error_message', '')))
+				raise StackExchangeError(error_ob.get('error_id', StackExchangeError.UNKNOWN), error_ob.get('error_name'), error_ob.get('error_message'))
 
 		conn.close()
 		req_object = WebRequest(actual_data, info)
