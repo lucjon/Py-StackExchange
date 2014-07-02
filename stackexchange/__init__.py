@@ -23,11 +23,12 @@ class Statistics(JSONModel):
 class Answer(JSONModel):
 	"""Describes an answer on a StackExchange site."""
 
-	transfer = ('accepted', 'locked_date', 'question_id', 'up_vote_count', 'down_vote_count', 'view_count', 'score',
+	transfer = ('is_accepted', 'locked_date', 'question_id', 'up_vote_count', 'down_vote_count', 'view_count', 'score',
 		'community_owned', 'title', 'body')
 
 	def _extend(self, json, site):
 		self.id = json.answer_id
+		self.accepted = self.is_accepted
 
 		if not hasattr(json, '_params_'):
 			comment = False
