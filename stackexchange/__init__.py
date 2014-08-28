@@ -164,7 +164,8 @@ class Comment(JSONModel):
 				'reputation': json.reply_to['reputation'],
 				'profile_image': json.reply_to['profile_image']})
 
-		self.post_type = PostType.from_string(json.post_type)
+		if hasattr(json, 'post_type'):
+			self.post_type = PostType.from_string(json.post_type)
 
 	def _get_post(self):
 		if self.post_type == PostType.Question:
