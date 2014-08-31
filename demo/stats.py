@@ -3,6 +3,7 @@
 # a hack so you can run it 'python demo/stats.py'
 import sys
 sys.path.append('.')
+sys.path.append('..')
 
 import stackexchange
 so = stackexchange.Site(stackexchange.StackOverflow)

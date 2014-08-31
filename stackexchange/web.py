@@ -159,7 +159,6 @@ class WebRequestManager(object):
 		# In API v2.x we now need to respect the 'backoff' warning
 		if 'backoff' in parsed_result:
 			method = self.canon_method_name(to)
-			self.backoff_expires[method] = datetime.datetime.now() + parsed_result[backoff]
+			self.backoff_expires[method] = datetime.datetime.now() + datetime.timedelta(seconds = parsed_result['backoff'])
 
 		return (parsed_result, req.info)
-
