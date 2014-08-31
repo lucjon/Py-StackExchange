@@ -3,6 +3,7 @@
 # Same directory hack
 import sys
 sys.path.append('.')
+sys.path.append('..')
 
 import stackexchange
 site = stackexchange.Site(stackexchange.StackOverflow)
