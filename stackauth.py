@@ -7,15 +7,15 @@ import datetime, re
 
 class SiteState(Enumeration):
 	"""Describes the state of a StackExchange site."""
-	Normal, OpenBeta, ClosedBeta, LinkedMeta = range(4)
+	Normal, OpenBeta, ClosedBeta, LinkedMeta = list(range(4))
 
 class SiteType(Enumeration):
 	'''Describes the type (meta or non-meta) of a StackExchange site.'''
-	MainSite, MetaSite = range(2)
+	MainSite, MetaSite = list(range(2))
 
 class MarkdownExtensions(Enumeration):
 	'''Specifies one of the possible extensions to Markdown a site can have enabled.'''
-	MathJax, Prettify, Balsamiq, JTab = range(4)
+	MathJax, Prettify, Balsamiq, JTab = list(range(4))
 
 class SiteDefinition(JSONModel):
 	"""Contains information about a StackExchange site, reported by StackAuth."""

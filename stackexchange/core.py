@@ -1,7 +1,8 @@
 # stackcore.py - JSONModel/Enumeration + other utility classes that don't really belong now that the API's multi-file
 # This file is relatively safe to "import *"
 
-import datetime, urllib2
+import datetime
+from urllib.error import HTTPError
 from math import floor
 
 ## JSONModel base class
@@ -41,7 +42,7 @@ class JSONModel(object):
 
 		model = cls({}, site, True)
 
-		for k, v in populate.iteritems():
+		for k, v in list(populate.items()):
 			setattr(model, k, v)
 
 		model.fetch_callback = fetch_callback
@@ -147,9 +148,9 @@ to the initial function which created the resultset."""
 		return self
 
 	def __iter__(self):
-		return self.next()
+		return next(self)
 
-	def next(self):
+	def __next__(self):
 		for obj in self.items:
 			yield obj
 
@@ -162,7 +163,7 @@ to the initial function which created the resultset."""
 				current = current.fetch_next()
 				if len(current) == 0:
 					return
-			except urllib2.HTTPError:
+			except HTTPError:
 				return
 
 class NeedsAwokenError(Exception):

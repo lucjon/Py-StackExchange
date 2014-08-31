@@ -1,9 +1,11 @@
-import datetime, operator, time, urllib
+import datetime, operator, time, urllib.request, urllib.parse, urllib.error
 from stackexchange.web import WebRequestManager
 from stackexchange.core import *
 
 # Site constants
 from stackexchange.sites import *
+import collections
+from functools import reduce
 
 def or_none(o, k):
 	try:
@@ -80,10 +82,10 @@ class Answer(JSONModel):
 		return site.answer(self.id)
 
 	def __unicode__(self):
-		return u'Answer %d' % self.id
+		return 'Answer %d' % self.id
 
 	def __str__(self):
-		return str(unicode(self))
+		return str(str(self))
 
 	def __repr__(self):
 		return '<Answer %d @ %x>' % (self.id, id(self))
@@ -178,9 +180,9 @@ class Comment(JSONModel):
 	post = property(_get_post)
 
 	def __unicode__(self):
-		return u'Comment ' + str(self.id)
+		return 'Comment ' + str(self.id)
 	def __str__(self):
-		return str(unicode(self))
+		return str(str(self))
 
 #### Revisions #
 class RevisionType(Enumeration):
@@ -283,7 +285,7 @@ class Tag(JSONModel):
 ##### Users ####
 class BadgeType(Enumeration):
 	"""Describes the rank or type of a badge: one of Bronze, Silver or Gold."""
-	Bronze, Silver, Gold = range(3)
+	Bronze, Silver, Gold = list(range(3))
 
 class Badge(JSONModel):
 	"""Describes a badge awardable on a StackExchange site."""
@@ -481,7 +483,7 @@ class User(JSONModel):
 	def __unicode__(self):
 		return 'User %d [%s]' % (self.id, self.display_name)
 	def __str__(self):
-		return str(unicode(self))
+		return str(str(self))
 	def __repr__(self):
 		return "<User '%s' (%d) @ %x>" % (self.display_name, self.id, id(self))
 
@@ -615,7 +617,7 @@ through here."""
 		try:
 			if isinstance(ob, datetime.datetime):
 				return str(time.mktime(ob.timetuple()))
-			elif isinstance(ob, basestring):
+			elif isinstance(ob, str):
 				return ob
 			else:
 				i = iter(ob)
@@ -628,7 +630,7 @@ through here."""
 		params['site'] = params.get('site', self.root_domain)
 
 		new_params = {}
-		for k, v in params.iteritems():
+		for k, v in params.items():
 			if v is None:
 				pass
 			elif k in ('fromdate', 'todate'):
@@ -685,7 +687,7 @@ through here."""
 		if allowed_types is not None and not hasattr(allowed_types, '__iter__'):
 			allowed_types = (allowed_types, )
 
-		if isinstance(lst, basestring) or type(lst).__name__ == 'bytes':
+		if isinstance(lst, str) or type(lst).__name__ == 'bytes':
 			return lst
 		elif hasattr(lst, '__iter__'):
 			return ';'.join([self.vectorise(x, or_of_type) for x in lst])
@@ -859,7 +861,7 @@ class CompositeSite(object):
 		self.site_two = s2
 
 	def __getattr__(self, a):
-		if hasattr(self.site_one, a) and hasattr(self.site_two, a) and callable(getattr(self.site_one, a)):
+		if hasattr(self.site_one, a) and hasattr(self.site_two, a) and isinstance(getattr(self.site_one, a), collections.Callable):
 			def handle(*ps, **kws):
 				res1 = getattr(self.site_one, a)(*ps, **kws)
 				res2 = getattr(self.site_two, a)(*ps, **kws)

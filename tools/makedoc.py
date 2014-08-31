@@ -41,7 +41,7 @@ class Function(object):
 			params = ''
 
 			if hasattr(self, 'parameters'):
-				params = ', '.join(self.parameters.keys())
+				params = ', '.join(list(self.parameters.keys()))
 
 			return '%s(%s)' % (self.function, params)
 
@@ -57,13 +57,13 @@ class HTMLDocGenerator(object):
 		unimplemented = 0
 		total = 0
 	
-		for name, category in self.tree.items():
+		for name, category in list(self.tree.items()):
 			if name.startswith('__'):
 				continue
 
 			current_category = []
 
-			for funct_id, function in category.iteritems():
+			for funct_id, function in category.items():
 				f = Function('%s.%s' % (name, funct_id), function)
 
 				if f.unimplemented:
@@ -110,7 +110,7 @@ class HTMLDocGenerator(object):
 					html.append('<h4>Parameters</h4>')
 					html.append('<div class="params">')
 
-					for key, desc in funct.parameters.iteritems():
+					for key, desc in funct.parameters.items():
 						html.append('<div><span class="param_name">%s</span> <span class="param_desc">%s</span></div>' % (key, desc))
 
 					html.append('</div>')

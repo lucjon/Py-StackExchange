@@ -5,7 +5,7 @@ import stackexchange.sites as stacksites
 from stackexchange.core import StackExchangeError
 # for Python 3 compatiblity
 try:
-    import htmlentitydefs
+    import html.entities
 except ImportError:
     import html.entities as htmlentitydefs
 
@@ -21,10 +21,10 @@ def _setUp(self):
 
 stackexchange.web.WebRequestManager.debug = True
 
-htmlentitydefs.name2codepoint['#39'] = 39
+html.entities.name2codepoint['#39'] = 39
 def html_unescape(text):
-    return re.sub('&(%s);' % '|'.join(htmlentitydefs.name2codepoint),
-              lambda m: unichr(htmlentitydefs.name2codepoint[m.group(1)]), text)
+    return re.sub('&(%s);' % '|'.join(html.entities.name2codepoint),
+              lambda m: chr(html.entities.name2codepoint[m.group(1)]), text)
 
 class DataTests(unittest.TestCase):
 	def setUp(self):
@@ -44,7 +44,7 @@ class DataTests(unittest.TestCase):
 
 	def test_fetch_question(self):
 		s = self.site.question(QUESTION_ID)
-		self.assertEqual(html_unescape(s.title), u"When setting a form's opacity should I use a decimal or double?")
+		self.assertEqual(html_unescape(s.title), "When setting a form's opacity should I use a decimal or double?")
 
 	def test_fetch_answer(self):
 		s = self.site.answer(ANSWER_ID)
