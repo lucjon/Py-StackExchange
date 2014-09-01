@@ -75,4 +75,4 @@ The `extend_next()` function returns a list with the extra data appended, `fetch
 # Next Steps
 Read, and run, the example code. The programs are simple and cover most of the basic usage of the API. Many of the examples also have wiki pages on the Github site.
 
-If you encounter any problems at all, feel free to leave an answer on [StackApps](http://stackapps.com/question/198), or to e-mail me at `lucas @ lucasjones . co.uk`. Yay, vanity domains.
+If you encounter any problems at all, feel free to leave an answer on [StackApps](https://stackapps.com/questions/198/py-stackexchange-an-api-wrapper-for-python), or to e-mail me at `lucas @ lucasjones . co.uk`. Yay, vanity domains.
