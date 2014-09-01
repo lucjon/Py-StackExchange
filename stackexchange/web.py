@@ -1,7 +1,7 @@
 # stackweb.py - Core classes for web-request stuff
 
 from stackexchange.core import StackExchangeError
-import urllib2, httplib, datetime, operator, io, gzip, time, urllib, urlparse
+import urllib.request, urllib.error, urllib.parse, http.client, datetime, operator, io, gzip, time
 import datetime
 try:
 	import json
@@ -47,11 +47,11 @@ class WebRequestManager(object):
 
 	def debug_print(self, *p):
 		if WebRequestManager.debug:
-			print ' '.join([x if isinstance(x, str) else repr(x) for x in p])
+			print((' '.join([x if isinstance(x, str) else repr(x) for x in p])))
 	
 	def canon_method_name(self, url):
 		# Take the URL relative to the domain, without initial / or parameters
-		parsed = urlparse.urlparse(url)
+		parsed = urllib.parse.urlparse(url)
 		return '/'.join(parsed.path.split('/')[1:])
 
 	def request(self, url, params):
@@ -59,17 +59,17 @@ class WebRequestManager(object):
 
 		# Quote URL fields (mostly for 'c#'), but not : in http://
 		components = url.split('/')
-		url = components[0] + '/'  + ('/'.join(urllib.quote(path) for path in components[1:]))
+		url = components[0] + '/'  + ('/'.join(urllib.parse.quote(path) for path in components[1:]))
 
 		done = False
-		for k, v in params.iteritems():
+		for k, v in list(params.items()):
 			if not done:
 				url += '?'
 				done = True
 			else:
 				url += '&'
 
-			url += '%s=%s' % (k, urllib.quote(str(v).encode('utf-8')))
+			url += '%s=%s' % (k, urllib.parse.quote(str(v).encode('utf-8')))
 		
 		# Now we have the `proper` URL, we can check the cache
 		if self.do_cache and url in self.cache:
@@ -105,17 +105,17 @@ class WebRequestManager(object):
 
 		# We definitely do need to go out to the internet, so make the real request
 		self.debug_print('R>', url)
-		request = urllib2.Request(url)
+		request = urllib.request.Request(url)
 		
 		request.add_header('Accept-encoding', 'gzip')
-		req_open = urllib2.build_opener()
+		req_open = urllib.request.build_opener()
 
 		try:
 			conn = req_open.open(request)
 			info = conn.info()
 			req_data = conn.read()
 			error_code = 200
-		except urllib2.HTTPError as e:
+		except urllib.error.HTTPError as e:
 			# we'll handle the error response later
 			error_code = e.code
 			# a hack (headers is an undocumented property), but there's no sensible way to get them

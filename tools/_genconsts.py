@@ -12,4 +12,4 @@ for site in sites:
 	name = name.replace('-', '')
 	source.append('%s = __SEAPI(\'%s\')' % (name, site.api_endpoint[7:]))
 
-print ('\n'.join(source))
+print(('\n'.join(source)))

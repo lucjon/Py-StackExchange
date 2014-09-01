@@ -9,7 +9,7 @@ from stackexchange import Site, StackOverflow, StackExchangeLazySequence
 
 site = None
 
-print 'Loading sites...',
+print('Loading sites...', end=' ')
 sys.stdout.flush()
 all_sites = StackAuth().sites()
 chosen_site_before = False
@@ -18,31 +18,31 @@ code_so_far = []
 def choose_site():
 	global chosen_site_before
 
-	print '\r                \rSelect a site (0 exits):'
+	print('\r                \rSelect a site (0 exits):')
 	
 	i = 1
 	for site in all_sites:
-		print '%d) %s' % (i, site.name)
+		print('%d) %s' % (i, site.name))
 		i += 1
 	
 	if i == 0:
 		return
 	else:
-		site_def = all_sites[int(raw_input('\nSite ID: ')) - 1]
+		site_def = all_sites[int(input('\nSite ID: ')) - 1]
 	
 	site = site_def.get_site()
 	site.app_key = '1_9Gj-egW0q_k1JaweDG8Q'
 	site.be_inclusive = True
 
 	if not chosen_site_before:
-		print 'Use function names you would when using the Site, etc. objects.'
-		print 'return:	Move back up an object.'
-		print 'exit:	Quits.'
-		print 'dir:		Shows meaningful methods and properties on the current object.'
-		print 'dir*:	Same as dir, but includes *all* methods and properties.'
-		print 'code:	Show the code you\'d need to get to where you are now.'
-		print '! before a non-function means "explore anyway."'
-		print 'a prompt ending in []> means the current item is a list.'
+		print('Use function names you would when using the Site, etc. objects.')
+		print('return:	Move back up an object.')
+		print('exit:	Quits.')
+		print('dir:		Shows meaningful methods and properties on the current object.')
+		print('dir*:	Same as dir, but includes *all* methods and properties.')
+		print('code:	Show the code you\'d need to get to where you are now.')
+		print('! before a non-function means "explore anyway."')
+		print('a prompt ending in []> means the current item is a list.')
 
 		chosen_site_before = True
 	return (site, site_def)
@@ -59,7 +59,7 @@ def explore(ob, nm, pname=None):
 
 	while True:
 		# kind of hackish, but oh, well!
-		inp = raw_input('%s%s> ' % (nm, suffix))
+		inp = input('%s%s> ' % (nm, suffix))
 		punt_to_default = False
 
 		if inp == 'exit':
@@ -71,21 +71,21 @@ def explore(ob, nm, pname=None):
 			if is_list:
 				i = 0
 				for item in ob:
-					print '%d) %s' % (i, str(item))
+					print('%d) %s' % (i, str(item)))
 					i += 1
 			else:
-				print repr([x for x in dir(ob) if not x.startswith('_') and x[0].lower() == x[0]])
+				print(repr([x for x in dir(ob) if not x.startswith('_') and x[0].lower() == x[0]]))
 		elif inp == 'dir*':
-			print repr(dir(ob))
+			print(repr(dir(ob)))
 		elif inp == 'code':
-			print '\n'.join(code_so_far)
+			print('\n'.join(code_so_far))
 		elif is_list:
 			try:
 				item = ob[inp if is_dict else int(inp)]
 				code_so_far.append('%s_item = %s[%s]' % (vname, vname, inp))
 				explore(item, vname + '_item')
 			except:
-				print 'Not in list... continuing as if was an attribute.'
+				print('Not in list... continuing as if was an attribute.')
 				punt_to_default = True
 		elif hasattr(ob, inp) or (len(inp) > 0 and inp[0] == '!') or punt_to_default:
 			should_explore = False
@@ -104,9 +104,9 @@ def explore(ob, nm, pname=None):
 				
 				# we ask the user for each parameter in turn. we offset by one for self, after using reflection to find the parameter names.
 				args = []
-				for i in range(rval.func_code.co_argcount - 1):
-					name = rval.func_code.co_varnames[i + 1]
-					value = raw_input(name + ': ')
+				for i in range(rval.__code__.co_argcount - 1):
+					name = rval.__code__.co_varnames[i + 1]
+					value = input(name + ': ')
 
 					if value == '':
 						value = None
@@ -126,10 +126,10 @@ def explore(ob, nm, pname=None):
 				rval = rval(*args)
 
 			if isinstance(rval, StackExchangeLazySequence):
-				print 'Fetching data...',
+				print('Fetching data...', end=' ')
 				sys.stdout.flush()
 				rval = rval.fetch()
-				print '\r                 \rFetched. You\'ll need to remember to call .fetch() in your code.'
+				print('\r                 \rFetched. You\'ll need to remember to call .fetch() in your code.')
 				
 				extra_code = '.fetch()'
 				should_explore = True
@@ -137,7 +137,7 @@ def explore(ob, nm, pname=None):
 			if isinstance(rval, list) or isinstance(rval, tuple):
 				should_explore = True
 
-			print repr(rval)
+			print(repr(rval))
 			if should_explore:
 				# generate code
 				code = '%s = %s.%s%s' % (inp, vname, inp, extra_code)
@@ -145,7 +145,7 @@ def explore(ob, nm, pname=None):
 
 				explore(rval, inp)
 		else:
-			print 'Invalid response.'
+			print('Invalid response.')
 
 code_so_far.append('import stackexchange')
 while True:
