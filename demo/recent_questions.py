@@ -17,8 +17,8 @@ print '\r #  vote ans view'
 
 cur = 1
 for question in questions:
-	print '%2d %3d  %3d  %3d \t%s' % (cur, question.score, len(question.answers), question.view_count, question.title)
-	cur += 1
+    print '%2d %3d  %3d  %3d \t%s' % (cur, question.score, len(question.answers), question.view_count, question.title)
+    cur += 1
 
 num = int(raw_input('Question no.: '))
 qu  = questions[num - 1]
