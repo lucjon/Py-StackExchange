@@ -1,4 +1,5 @@
 # stackweb.py - Core classes for web-request stuff
+from __future__ import print_function
 
 from stackexchange.core import StackExchangeError
 import urllib2, httplib, datetime, operator, io, gzip, time, urllib, urlparse
@@ -47,7 +48,7 @@ class WebRequestManager(object):
 
     def debug_print(self, *p):
         if WebRequestManager.debug:
-            print ' '.join([x if isinstance(x, str) else repr(x) for x in p])
+            print(' '.join([x if isinstance(x, str) else repr(x) for x in p]))
     
     def canon_method_name(self, url):
         # Take the URL relative to the domain, without initial / or parameters

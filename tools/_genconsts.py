@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import stackauth
 
 sites = stackauth.StackAuth().sites()
@@ -12,4 +14,4 @@ for site in sites:
     name = name.replace('-', '')
     source.append('%s = __SEAPI(\'%s\')' % (name, site.api_endpoint[7:]))
 
-print ('\n'.join(source))
+print('\n'.join(source))

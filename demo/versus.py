@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import sys
 sys.path.append('.')
@@ -6,7 +7,7 @@ sys.path.append('..')
 import stackexchange, stackauth
 
 if len(sys.argv) < 3:
-    print 'Usage: versus.py YOUR_SO_UID THEIR_SO_UID'
+    print('Usage: versus.py YOUR_SO_UID THEIR_SO_UID')
     sys.exit(1)
 
 so = stackexchange.Site(stackexchange.StackOverflow)
@@ -37,7 +38,8 @@ for site in sites:
     
     diff = max_rep - other_rep
 
-    print '%s: %s wins (+%d)' % (site, max_user, diff)
+    print('%s: %s wins (+%d)' % (site, max_user, diff))
 
-print 'Overall: %s wins (+%d)' % (username1 if total_rep1 >= total_rep2 else username2, max(total_rep1, total_rep2) - min(total_rep1, total_rep2))
+print('Overall: %s wins (+%d)' % (username1 if total_rep1 >= total_rep2 else username2, max(total_rep1, total_rep2) - min(total_rep1, total_rep2)))
+
 
