@@ -6,13 +6,22 @@ import sys
 sys.path.append('.')
 sys.path.append('..')
 
-import stackexchange
-so = stackexchange.Site(stackexchange.StackOverflow)
+try:
+    get_input = raw_input
+except NameError:
+    get_input = input
 
-if len(sys.argv) < 2:
-    print('Usage: search.py TERM')
-else:
-    term = ' '.join(sys.argv[1:])
+user_api_key = get_input("Please enter an API key if you have one (Return for none):")
+if not user_api_key: user_api_key = None
+
+import stackexchange
+so = stackexchange.Site(stackexchange.StackOverflow, app_key=user_api_key, impose_throttling=True)
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        term = get_input('Please provide a search term:')
+    else:
+        term = ' '.join(sys.argv[1:])
     print('Searching for %s...' % term,)
     sys.stdout.flush()
 

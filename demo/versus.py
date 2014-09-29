@@ -10,7 +10,7 @@ if len(sys.argv) < 3:
     print('Usage: versus.py YOUR_SO_UID THEIR_SO_UID')
     sys.exit(1)
 
-so = stackexchange.Site(stackexchange.StackOverflow)
+so = stackexchange.Site(stackexchange.StackOverflow, impose_throttling=True)
 
 user1, user2 = (int(x) for x in sys.argv[1:])
 rep1, rep2 = {}, {}

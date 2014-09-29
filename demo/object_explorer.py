@@ -22,6 +22,8 @@ all_sites = StackAuth().sites()
 chosen_site_before = False
 code_so_far = []
 
+user_api_key = get_input("Please enter an API key if you have one (Return for none):")
+
 def choose_site():
     global chosen_site_before
 
@@ -38,7 +40,8 @@ def choose_site():
         site_def = all_sites[int(get_input('\nSite ID: ')) - 1]
     
     site = site_def.get_site()
-    site.app_key = '1_9Gj-egW0q_k1JaweDG8Q'
+    site.app_key = user_api_key or '1_9Gj-egW0q_k1JaweDG8Q'
+    site.impose_throttling = True
     site.be_inclusive = True
 
     if not chosen_site_before:

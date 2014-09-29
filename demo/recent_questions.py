@@ -11,8 +11,11 @@ try:
 except NameError:
     get_input = input
 
+user_api_key = get_input("Please enter an API key if you have one (Return for none):")
+if not user_api_key: user_api_key = None
+
 import stackexchange, thread
-so = stackexchange.Site(stackexchange.StackOverflow)
+so = stackexchange.Site(stackexchange.StackOverflow, app_key=user_api_key, impose_throttling=True)
 so.be_inclusive()
 
 sys.stdout.write('Loading...')

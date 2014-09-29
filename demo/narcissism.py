@@ -12,7 +12,7 @@ user_id = 41981 if len(sys.argv) < 2 else int(sys.argv[1])
 print('StackOverflow user %d\'s accounts:' % user_id)
 
 stack_auth = StackAuth()
-so = Site(StackOverflow)
+so = Site(StackOverflow, impose_throttling=True)
 accounts = stack_auth.api_associated(so, user_id)
 reputation = {}
 
