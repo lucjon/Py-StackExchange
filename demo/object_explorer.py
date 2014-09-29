@@ -8,6 +8,12 @@ sys.path.append('..')
 from stackauth import StackAuth
 from stackexchange import Site, StackOverflow, StackExchangeLazySequence
 
+try:
+    get_input = raw_input
+except NameError:
+    get_input = input
+    
+
 site = None
 
 print('Loading sites...',)
@@ -29,7 +35,7 @@ def choose_site():
     if i == 0:
         return
     else:
-        site_def = all_sites[int(raw_input('\nSite ID: ')) - 1]
+        site_def = all_sites[int(get_input('\nSite ID: ')) - 1]
     
     site = site_def.get_site()
     site.app_key = '1_9Gj-egW0q_k1JaweDG8Q'
@@ -60,7 +66,7 @@ def explore(ob, nm, pname=None):
 
     while True:
         # kind of hackish, but oh, well!
-        inp = raw_input('%s%s> ' % (nm, suffix))
+        inp = get_input('%s%s> ' % (nm, suffix))
         punt_to_default = False
 
         if inp == 'exit':
@@ -107,7 +113,7 @@ def explore(ob, nm, pname=None):
                 args = []
                 for i in range(rval.func_code.co_argcount - 1):
                     name = rval.func_code.co_varnames[i + 1]
-                    value = raw_input(name + ': ')
+                    value = get_input(name + ': ')
 
                     if value == '':
                         value = None

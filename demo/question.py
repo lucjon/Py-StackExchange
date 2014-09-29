@@ -6,11 +6,16 @@ import sys
 sys.path.append('.')
 sys.path.append('..')
 
+try:
+    get_input = raw_input
+except NameError:
+    get_input = input
+
 import stackexchange
 site = stackexchange.Site(stackexchange.StackOverflow)
 site.be_inclusive()
 
-id = int(raw_input("Enter a question ID: "))
+id = int(get_input("Enter a question ID: "))
 question = site.question(id)
 
 print('--- %s ---' % question.title)
