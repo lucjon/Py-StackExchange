@@ -80,8 +80,8 @@ class DataTests(unittest.TestCase):
 		self.assertNotEqual(q.body, None)
 
 		a = self.site.answer(ANSWER_ID, body=True)
-		self.assertTrue(hasattr(q, 'body'))
-		self.assertNotEqual(q.body, None)
+		self.assertTrue(hasattr(a, 'body'))
+		self.assertNotEqual(a.body, None)
 	
 	def test_tag_synonyms(self):
 		syns = self.site.tag_synonyms()

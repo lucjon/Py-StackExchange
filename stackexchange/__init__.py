@@ -493,40 +493,8 @@ class QuestionsQuery(object):
 	def __init__(self, site):
 		self.site = site
 
-	def check(self, kw):
-		if 'answers' not in kw:
-			kw['answers'] = 'true'
-		if self.site.include_body:
-			kw['body'] = 'true'
-		if self.site.include_comments:
-			kw['comments'] = 'true'
-
-		# for API v2.x, the comments, body and answers parameters no longer
-		# exist; instead, we have to use filters. for now, take the easy way
-		# out and just rewrite them in terms of the new filters.
-		if 'filter' not in kw:
-			filter_name = '_'
-
-			if kw.get('body'):
-				filter_name += 'b'
-				del kw['body']
-			if kw.get('comments'):
-				filter_name += 'c'
-				del kw['comments']
-			if kw.get('answers'):
-				filter_name += 'a'
-				del kw['answers']
-
-			if filter_name == '_ca':
-				# every other compatibility filter name works in the above
-				# order except this one...
-				kw['filter'] = '_ac'
-			elif filter_name != '_':
-				kw['filter'] = filter_name
-
-
 	def __call__(self, ids=None, user_id=None, **kw):
-		self.check(kw)
+		self.site.check_filter(kw)
 
 		# Compatibility hack, as user_id= was in versions below v1.1
 		if ids is None and user_id is not None:
@@ -537,22 +505,22 @@ class QuestionsQuery(object):
 			return self.site._get(Question, ids, 'questions', kw)
 
 	def linked_to(self, qn, **kw):
-		self.check(kw)
+		self.site.check_filter(kw)
 		url = 'questions/%s/linked' % self.site.vectorise(qn, Question)
 		return self.site.build(url, Question, 'questions', kw)
 
 	def related_to(self, qn, **kw):
-		self.check(kw)
+		self.site.check_filter(kw)
 		url = 'questions/%s/related' % self.site.vectorise(qn, Question)
 		return self.site.build(url, Question, 'questions', kw)
 
 	def by_user(self, usr, **kw):
-		self.check(kw)
+		self.site.check_filter(kw)
 		kw['user_id'] = usr
 		return self.site._user_prop('questions', Question, 'questions', kw)
 
 	def unanswered(self, by=None, **kw):
-		self.check(kw)
+		self.site.check_filter(kw)
 
 		if by is None:
 			return self.site.build('questions/unanswered', Question, 'questions', kw)
@@ -561,7 +529,7 @@ class QuestionsQuery(object):
 			return self.site._user_prop('questions/unanswered', Question, 'questions', kw)
 
 	def no_answers(self, by=None, **kw):
-		self.check(kw)
+		self.site.check_filter(kw)
 
 		if by is None:
 			return self.site.build('questions/no-answers', Question, 'questions', kw)
@@ -570,12 +538,12 @@ class QuestionsQuery(object):
 			return self.site._user_prop('questions/no-answers', Question, 'questions', kw)
 
 	def unaccepted(self, by, **kw):
-		self.check(kw)
+		self.site.check_filter(kw)
 		kw['user_id'] = by
 		return self.site._user_prop('questions/unaccepted', Questions, 'questions', kw)
 
 	def favorited_by(self, by, **kw):
-		self.check(kw)
+		self.site.check_filter(kw)
 		kw['user_id'] = by
 		return self.site._user_prop('favorites', Question, 'questions', kw)
 
@@ -610,6 +578,37 @@ through here."""
 		Comment: 'comments/%s',
 		Question: 'questions/%s',
 	}
+
+	def check_filter(self, kw):
+		if 'answers' not in kw:
+			kw['answers'] = 'true'
+		if self.include_body:
+			kw['body'] = 'true'
+		if self.include_comments:
+			kw['comments'] = 'true'
+
+		# for API v2.x, the comments, body and answers parameters no longer
+		# exist; instead, we have to use filters. for now, take the easy way
+		# out and just rewrite them in terms of the new filters.
+		if 'filter' not in kw:
+			filter_name = '_'
+
+			if kw.get('body'):
+				filter_name += 'b'
+				del kw['body']
+			if kw.get('comments'):
+				filter_name += 'c'
+				del kw['comments']
+			if kw.get('answers'):
+				filter_name += 'a'
+				del kw['answers']
+
+			if filter_name == '_ca':
+				# every other compatibility filter name works in the above
+				# order except this one...
+				kw['filter'] = '_ac'
+			elif filter_name != '_':
+				kw['filter'] = filter_name
 
 	def _kw_to_str(self, ob):
 		try:
@@ -724,6 +723,7 @@ through here."""
 	def answers(self, ids=None, **kw):
 		"""Retrieves a set of the answers with the IDs specified in the 'ids' parameter, or by the
 		user_id specified."""
+                self.check_filter(kw)
 		if ids is None and 'user_id' in kw:
 			return self._user_prop('answers', Answer, 'answers', kw)
 		elif ids is None:
