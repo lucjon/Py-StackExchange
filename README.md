@@ -29,11 +29,11 @@ The primary class in the bindings is the Site class; it is used for querying inf
 
 A number of site URLs come predefined; the list is rebuilt every so often. A new site's URL may not be defined, in this case, simply use a string in the form `'api.joelfanclub.stackexchange.com'`. Don't put in `http://` or anything like that.
 
-Once you have your site object, you can start to get some data dumped:
+Once you have your site object, you can start to get some data dumped (using Py3/print_function syntax):
 
     my_favourite_guy = so.user(41981)
-	print my_favourite_guy.reputation.format()
-	print len(my_favourite_guy.answers), 'answers'
+	print(my_favourite_guy.reputation.format())
+	print(len(my_favourite_guy.answers), 'answers')
 
 ## API Keys
 If you're planning to use the API in an application or web service, especially one which will be making a large number of requests, you'll want to sign up for an API key on [StackApps](http://stackapps.com).
@@ -64,7 +64,7 @@ With the fetch call, the list contains the appropriate data. Note that after thi
 ### Navigating Lists
 The API uses a page-based system for navigating large datasets. This means that a set number (usually 30 or 60) of elements are fetched initially, with more available on-demand:
 
-    print qs.pagesize
+    print(qs.pagesize)
 	# processing
 	# Get more
 	qs = qs.extend_next()

@@ -1,7 +1,7 @@
 import stackexchange
 class __SEAPI(str):
-	def __call__(self):
-		return stackexchange.Site(self)
+    def __call__(self):
+        return stackexchange.Site(self)
 StackOverflow = __SEAPI('api.stackoverflow.com')
 ServerFault = __SEAPI('api.serverfault.com')
 SuperUser = __SEAPI('api.superuser.com')
