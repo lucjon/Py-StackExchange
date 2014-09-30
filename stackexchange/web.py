@@ -64,7 +64,7 @@ class WebRequestManager(object):
         url = components[0] + '/'  + ('/'.join(urllib.parse.quote(path) for path in components[1:]))
 
         done = False
-        for k, v in params.iteritems():
+        for k, v in params.items():
             if not done:
                 url += '?'
                 done = True

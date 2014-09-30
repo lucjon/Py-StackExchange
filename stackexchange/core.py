@@ -42,7 +42,7 @@ class JSONModel(object):
 
         model = cls({}, site, True)
 
-        for k, v in populate.iteritems():
+        for k, v in populate.items():
             setattr(model, k, v)
 
         model.fetch_callback = fetch_callback
