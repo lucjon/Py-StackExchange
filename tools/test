@@ -5,10 +5,7 @@ function test_py2 {
 }
 
 function test_py3 {
-	rm -rf ./build
-	python3 setup.py build
-	cp testsuite.py ./build/lib*
-	( cd ./build/lib* && python3 testsuite.py )
+	python3 ./testsuite.py
 }
 
 test_py3 && test_py2
