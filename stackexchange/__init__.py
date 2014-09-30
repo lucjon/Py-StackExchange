@@ -4,6 +4,7 @@ import time
 
 from six.moves import urllib
 from six import string_types
+from six.moves import reduce
 
 from stackexchange.web import WebRequestManager
 from stackexchange.core import *
