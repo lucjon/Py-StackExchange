@@ -21,7 +21,7 @@ setup(
     url = 'http://stackapps.com/questions/198/py-stackexchange-an-api-wrapper-for-python',
     download_url = 'https://github.com/lucjon/Py-StackExchange/tarball/master',
     keywords = ['stackexchange', 'se', 'stackoverflow'],
-    install_requires = ['six >= 1.8.0']
+    install_requires = ['six >= 1.8.0'],
     classifiers = [
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.6',
