@@ -1,4 +1,10 @@
-import datetime, operator, time, urllib
+import datetime
+import operator
+import time
+
+from six.moves import urllib
+from six import string_types
+
 from stackexchange.web import WebRequestManager
 from stackexchange.core import *
 
@@ -615,7 +621,7 @@ through here."""
         try:
             if isinstance(ob, datetime.datetime):
                 return str(time.mktime(ob.timetuple()))
-            elif isinstance(ob, basestring):
+            elif isinstance(ob, string_types):
                 return ob
             else:
                 i = iter(ob)
@@ -628,7 +634,7 @@ through here."""
         params['site'] = params.get('site', self.root_domain)
 
         new_params = {}
-        for k, v in params.iteritems():
+        for k, v in params.items():
             if v is None:
                 pass
             elif k in ('fromdate', 'todate'):
@@ -685,7 +691,7 @@ through here."""
         if allowed_types is not None and not hasattr(allowed_types, '__iter__'):
             allowed_types = (allowed_types, )
 
-        if isinstance(lst, basestring) or type(lst).__name__ == 'bytes':
+        if isinstance(lst, string_types) or type(lst).__name__ == 'bytes':
             return lst
         elif hasattr(lst, '__iter__'):
             return ';'.join([self.vectorise(x, or_of_type) for x in lst])
