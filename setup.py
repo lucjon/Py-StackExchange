@@ -6,9 +6,9 @@ import sys
 from setuptools import setup
 
 options = {}
-if sys.version_info > (3, 0):
+#if sys.version_info > (3, 0):
     # Automatically run 2to3 when installing under Python 3
-    options['use_2to3'] = True
+    #options['use_2to3'] = True
 
 
 setup(
