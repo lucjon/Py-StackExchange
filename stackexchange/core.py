@@ -1,8 +1,9 @@
 # stackcore.py - JSONModel/Enumeration + other utility classes that don't really belong now that the API's multi-file
 # This file is relatively safe to "import *"
 
-import datetime, urllib2
+import datetime
 from math import floor
+from six.moves import urllib
 
 ## JSONModel base class
 class JSONModel(object):
@@ -162,7 +163,7 @@ to the initial function which created the resultset."""
                 current = current.fetch_next()
                 if len(current) == 0:
                     return
-            except urllib2.HTTPError:
+            except urllib.error.HTTPError:
                 return
 
 class NeedsAwokenError(Exception):
