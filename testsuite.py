@@ -146,6 +146,10 @@ class DataTests(unittest.TestCase):
             defn.get_site(API_KEY).answer(ANSWER_ID)
             # Only do it once!
             break
+    
+    def test_advanced_search(self):
+        results = self.site.search_advanced(q = 'python')
+        self.assertTrue(len(results) > 0)
 
 
 class PlumbingTests(unittest.TestCase):
