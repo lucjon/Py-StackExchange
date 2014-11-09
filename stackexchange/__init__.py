@@ -829,6 +829,11 @@ unlike on the actual site, you will receive an error rather than a redirect to t
     def search(self, **kw):
         return self.build('search', Question, 'questions', kw)
 
+    def search_advanced(self, **kw):
+        kw['body'] = None
+        kw['comments'] = None
+        return self.build('search/advanced', Question, 'questions', kw)
+
     def similar(self, title, tagged=None, nottagged=None, **kw):
         if 'answers' not in kw:
             kw['answers'] = True
