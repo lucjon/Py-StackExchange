@@ -137,7 +137,7 @@ class DataTests(unittest.TestCase):
     def test_stackauth_site_types(self):
         s = stackauth.StackAuth()
         for site in s.sites():
-            self.assertTrue(site.site_type in {stackauth.SiteType.MainSite, stackauth.SiteType.MetaSite})
+            self.assertTrue(site.site_type in (stackauth.SiteType.MainSite, stackauth.SiteType.MetaSite))
     
     def test_stackauth_site_instantiate(self):
         for defn in stackauth.StackAuth().sites():
