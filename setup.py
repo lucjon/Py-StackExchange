@@ -14,7 +14,7 @@ options = {}
 setup(
     name = 'py-stackexchange',
     py_modules = ['stackexchange.core', 'stackexchange.sites', 'stackexchange.web', 'stackauth'],
-    version = '2.2.001',
+    version = '2.2.002',
     description = 'A Python binding to the StackExchange (Stack Overflow, Server Fault, etc.) website APIs.',
     author = 'Lucas Jones',
     author_email = 'lucas@lucasjones.co.uk',
