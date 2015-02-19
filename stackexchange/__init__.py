@@ -817,7 +817,7 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 
     def stats(self, **kw):
         '''Returns statistical information on the site, such as number of questions.'''
-        return self.build('stats', Statistics, 'statistics', kw)[0]
+        return self.build('info', Statistics, 'statistics', kw)[0]
 
     def revision(self, post, guid, **kw):
         real_id = post.id if isinstance(post, Question) or isinstance(post, Answer) else post
