@@ -21,10 +21,8 @@ def or_none(o, k):
 ##### Statistics    ###
 class Statistics(JSONModel):
     """Stores statistics for a StackExchange site."""
-    transfer = ('total_questions', 'total_unanswered', 'total_answers', 'total_comments', 'total_votes', 'total_badges', 'total_users', 'questions_per_minute', 'answers_per_minutes', 'badges_per_minute', 'display_name')
+    transfer = ('total_questions', 'total_unanswered', 'total_answers', 'total_comments', 'total_votes', 'total_badges', 'total_users', 'questions_per_minute', 'answers_per_minute', 'badges_per_minute', 'display_name')
 
-    def _extend(self, json, site):
-        self.api_version = DictObject(json.api_version)
 
 ##### Content Types ###
 class Answer(JSONModel):
