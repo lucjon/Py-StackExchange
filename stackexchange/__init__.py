@@ -21,10 +21,8 @@ def or_none(o, k):
 ##### Statistics    ###
 class Statistics(JSONModel):
     """Stores statistics for a StackExchange site."""
-    transfer = ('total_questions', 'total_unanswered', 'total_answers', 'total_comments', 'total_votes', 'total_badges', 'total_users', 'questions_per_minute', 'answers_per_minutes', 'badges_per_minute', 'display_name')
+    transfer = ('total_questions', 'total_unanswered', 'total_answers', 'total_comments', 'total_votes', 'total_badges', 'total_users', 'questions_per_minute', 'answers_per_minute', 'badges_per_minute', 'display_name')
 
-    def _extend(self, json, site):
-        self.api_version = DictObject(json.api_version)
 
 ##### Content Types ###
 class Answer(JSONModel):
@@ -817,7 +815,7 @@ unlike on the actual site, you will receive an error rather than a redirect to t
 
     def stats(self, **kw):
         '''Returns statistical information on the site, such as number of questions.'''
-        return self.build('stats', Statistics, 'statistics', kw)[0]
+        return self.build('info', Statistics, 'statistics', kw)[0]
 
     def revision(self, post, guid, **kw):
         real_id = post.id if isinstance(post, Question) or isinstance(post, Answer) else post
