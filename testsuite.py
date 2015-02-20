@@ -151,6 +151,10 @@ class DataTests(unittest.TestCase):
         results = self.site.search_advanced(q = 'python')
         self.assertTrue(len(results) > 0)
 
+    def test_stats(self):
+        results = self.site.stats()
+        self.assertTrue(results.total_users > 0)
+
 
 class PlumbingTests(unittest.TestCase):
     def setUp(self):
