@@ -813,9 +813,14 @@ unlike on the actual site, you will receive an error rather than a redirect to t
         '''Returns the set of all tags on the site.'''
         return self.build('tags', Tag, 'tags', kw)
 
-    def stats(self, **kw):
-        '''Returns statistical information on the site, such as number of questions.'''
+    def info(self, **kw):
+        '''Returns statistical information and metadata about the site, such as the total number of questions.'''
         return self.build('info', Statistics, 'statistics', kw)[0]
+
+    def stats(self, *a, **kw):
+        '''Returns statistical information and metadata about the site, such as the total number of questions.'''
+        # this is just an alias to info(), since the method name has changed since
+        return self.info(*a, **kw)
 
     def revision(self, post, guid, **kw):
         real_id = post.id if isinstance(post, Question) or isinstance(post, Answer) else post
