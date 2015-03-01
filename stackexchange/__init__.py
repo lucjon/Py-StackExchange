@@ -21,7 +21,7 @@ def or_none(o, k):
 ##### Statistics    ###
 class Statistics(JSONModel):
     """Stores statistics for a StackExchange site."""
-    transfer = ('total_questions', 'total_unanswered', 'total_answers', 'total_comments', 'total_votes', 'total_badges', 'total_users', 'questions_per_minute', 'answers_per_minute', 'badges_per_minute', 'display_name')
+    transfer = ('new_active_users', 'total_users', 'badges_per_minute', 'total_badges', 'total_votes', 'total_comments', 'answers_per_minute', 'questions_per_minute', 'total_answers', 'total_accepted', 'total_unanswered', 'total_questions', 'api_revision')
 
 
 ##### Content Types ###
