@@ -2,53 +2,8 @@
 
 from stackexchange.web import WebRequestManager
 from stackexchange.core import *
-from stackexchange import Site, User, UserType
+from stackexchange import Site, User, UserType, SiteState, SiteType, MarkdownExtensions, SiteDefinition
 import datetime, re
-
-class SiteState(Enumeration):
-    """Describes the state of a StackExchange site."""
-    Normal, OpenBeta, ClosedBeta, LinkedMeta = range(4)
-
-class SiteType(Enumeration):
-    '''Describes the type (meta or non-meta) of a StackExchange site.'''
-    MainSite, MetaSite = range(2)
-
-class MarkdownExtensions(Enumeration):
-    '''Specifies one of the possible extensions to Markdown a site can have enabled.'''
-    MathJax, Prettify, Balsamiq, JTab = range(4)
-
-class SiteDefinition(JSONModel):
-    """Contains information about a StackExchange site, reported by StackAuth."""
-    transfer = ('aliases', 'api_site_parameter', 'audience', 'favicon_url', 'high_resolution_icon_url', 'icon_url', 'logo_url', 'name', 'open_beta_date', 'related_sites', 'site_state', 'site_type', 'site_url', 'twitter_account', 'api_site_parameter')
-
-    def _extend(self, json, stackauth):
-        fixed_state = re.sub(r'_([a-z])', lambda match: match.group(1).upper(), json.site_state)
-        fixed_state = fixed_state[0].upper() + fixed_state[1:]
-
-        # To maintain API compatibility only; strictly speaking, we should use api_site_parameter
-        # to create new sites, and that's what we do in get_site()
-        self.api_endpoint = self.site_url
-        # Also to maintain rough API compatibility
-        self.description = json.audience
-
-        if hasattr(json, 'closed_beta_date'):
-            self.closed_beta_date = datetime.datetime.fromtimestamp(json.closed_beta_date)
-        if hasattr(json, 'open_beta_date'):
-            self.open_beta_date = datetime.datetime.fromtimestamp(json.open_beta_date)
-        if hasattr(json, 'markdown_extensions'):
-            self.markdown_extensions = [MarkdownExtensions.from_string(m) for m in json.markdown_extensions]
-        if hasattr(json, 'launch_date'):
-            # This field is not marked optional in the documentation, but for some reason certain
-            # meta sites omit it nonetheless
-            self.launch_date = datetime.datetime.fromtimestamp(json.launch_date)
-
-        self.site_state = SiteState.from_string(json.site_state)
-        self.site_type = SiteType.from_string(json.site_type)
-        self.state = SiteState.from_string(fixed_state)
-        self.styling = DictObject(json.styling)
-    
-    def get_site(self, *a, **kw):
-        return Site(self.api_site_parameter, *a, **kw)
 
 class Area51(object):
     def __getattr__(self, attr):

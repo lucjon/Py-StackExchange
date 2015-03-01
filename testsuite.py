@@ -155,6 +155,11 @@ class DataTests(unittest.TestCase):
         results = self.site.stats()
         self.assertTrue(results.total_users > 0)
 
+    def test_info_site_defn(self):
+        result = self.site.info(site = True)
+        self.assertNotEqual(result.site_definition, None)
+        self.assertTrue(len(result.site_definition.name) > 0)
+
 
 class PlumbingTests(unittest.TestCase):
     def setUp(self):

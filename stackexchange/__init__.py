@@ -1,5 +1,6 @@
 import datetime
 import operator
+import re
 import time
 
 from six.moves import urllib
@@ -18,11 +19,64 @@ def or_none(o, k):
     except:
         return None
 
+##### Site metadata ###
+# (originally in the stackauth module; now we need it for Site#info)
+
+class SiteState(Enumeration):
+    """Describes the state of a StackExchange site."""
+    Normal, OpenBeta, ClosedBeta, LinkedMeta = range(4)
+
+class SiteType(Enumeration):
+    '''Describes the type (meta or non-meta) of a StackExchange site.'''
+    MainSite, MetaSite = range(2)
+
+class MarkdownExtensions(Enumeration):
+    '''Specifies one of the possible extensions to Markdown a site can have enabled.'''
+    MathJax, Prettify, Balsamiq, JTab = range(4)
+
+class SiteDefinition(JSONModel):
+    """Contains information about a StackExchange site, reported by StackAuth."""
+    transfer = ('aliases', 'api_site_parameter', 'audience', 'favicon_url', 'high_resolution_icon_url', 'icon_url', 'logo_url', 'name', 'open_beta_date', 'related_sites', 'site_state', 'site_type', 'site_url', 'twitter_account', 'api_site_parameter')
+
+    def _extend(self, json, stackauth):
+        fixed_state = re.sub(r'_([a-z])', lambda match: match.group(1).upper(), json.site_state)
+        fixed_state = fixed_state[0].upper() + fixed_state[1:]
+
+        # To maintain API compatibility only; strictly speaking, we should use api_site_parameter
+        # to create new sites, and that's what we do in get_site()
+        self.api_endpoint = self.site_url
+        # Also to maintain rough API compatibility
+        self.description = json.audience
+
+        if hasattr(json, 'closed_beta_date'):
+            self.closed_beta_date = datetime.datetime.fromtimestamp(json.closed_beta_date)
+        if hasattr(json, 'open_beta_date'):
+            self.open_beta_date = datetime.datetime.fromtimestamp(json.open_beta_date)
+        if hasattr(json, 'markdown_extensions'):
+            self.markdown_extensions = [MarkdownExtensions.from_string(m) for m in json.markdown_extensions]
+        if hasattr(json, 'launch_date'):
+            # This field is not marked optional in the documentation, but for some reason certain
+            # meta sites omit it nonetheless
+            self.launch_date = datetime.datetime.fromtimestamp(json.launch_date)
+
+        self.site_state = SiteState.from_string(json.site_state)
+        self.site_type = SiteType.from_string(json.site_type)
+        self.state = SiteState.from_string(fixed_state)
+        self.styling = DictObject(json.styling)
+    
+    def get_site(self, *a, **kw):
+        return Site(self.api_site_parameter, *a, **kw)
+
 ##### Statistics    ###
 class Statistics(JSONModel):
     """Stores statistics for a StackExchange site."""
     transfer = ('new_active_users', 'total_users', 'badges_per_minute', 'total_badges', 'total_votes', 'total_comments', 'answers_per_minute', 'questions_per_minute', 'total_answers', 'total_accepted', 'total_unanswered', 'total_questions', 'api_revision')
 
+    def _extend(self, json, site):
+        if hasattr(json, 'site'):
+            # annoyingly, we've already used the 'site' field name so we have
+            # to diverge from the JSON here
+            self.site_definition = SiteDefinition(json.site, site)
 
 ##### Content Types ###
 class Answer(JSONModel):
@@ -814,11 +868,20 @@ unlike on the actual site, you will receive an error rather than a redirect to t
         return self.build('tags', Tag, 'tags', kw)
 
     def info(self, **kw):
-        '''Returns statistical information and metadata about the site, such as the total number of questions.'''
+        '''Returns statistical information and metadata about the site, such as the total number of questions.
+        
+Call with site=True to receive a SiteDefinition object representing this site in the site_definition field of the result.'''
+        if kw.get('site'):
+            # we need to remove site as a query parameter anyway to stop API
+            # getting confused
+            del kw['site']
+            if 'filter' not in kw:
+                kw['filter'] = '!9YdnSFfpS'
+
         return self.build('info', Statistics, 'statistics', kw)[0]
 
     def stats(self, *a, **kw):
-        '''Returns statistical information and metadata about the site, such as the total number of questions.'''
+        '''An alias for Site.info().'''
         # this is just an alias to info(), since the method name has changed since
         return self.info(*a, **kw)
 
