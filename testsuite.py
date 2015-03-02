@@ -188,6 +188,11 @@ class PlumbingTests(unittest.TestCase):
         v = self.site.vectorise(('hello', 10, True, False, q), stackexchange.Question)
         self.assertEqual(v, 'hello;10;true;false;%d' % QUESTION_ID)
 
+    def test_total(self):
+        r = self.site.search(tagged = 'python', filter = 'total')
+        self.assertTrue(hasattr(r, 'total'))
+        self.assertTrue(r.total > 0)
+
     def test_resultset_independence(self):
         # repro code for bug #4 (thanks, beaumartinez!)
 

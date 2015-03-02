@@ -94,6 +94,15 @@ class StackExchangeError(Exception):
         else:
             return '%d [%s]: %s' % (self.code, self.name, self.message)
 
+class EmptyResultset(tuple):
+    def __new__(cls, json):
+        instance = tuple.__new__(cls, [])
+
+        for key in ('page_size', 'page', 'has_more', 'total', 'quota_max', 'quota_remaining', 'type'):
+            if key in json:
+                setattr(instance, key, json[key])
+
+        return instance
 
 class StackExchangeResultset(tuple):
     """Defines an immutable, paginated resultset. This class can be used as a tuple, but provides extended metadata as well, including methods
@@ -264,7 +273,11 @@ class JSONMangler(object):
 
     @classmethod
     def json_to_resultset(cls, site, json, typ, collection, params=None):
-        if 'has_more' in json:
+        # this is somewhat of a special case, introduced by some filters in
+        # post-2.0 allowing only 'metadata' to be returned
+        if 'items' not in json:
+            return EmptyResultset(json)
+        elif 'has_more' in json:
             # we have a paginated resultset
             return cls.paginated_to_resultset(site, json, typ, collection, params)
         else:
