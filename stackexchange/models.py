@@ -134,7 +134,7 @@ class TimelineEvent(JSONModel):
 
     def _get_badge(self):
         if self.timeline_type == TimelineEventType.Badge:
-            return self.site.badge(name=self.description)
+            return self.site.badge(name = self.description)
         else:
             return None
 
@@ -276,10 +276,10 @@ class Question(JSONModel):
         return site.question(self.id)
 
     def linked(self):
-        return self.site.questions(linked_to=self.id)
+        return self.site.questions(linked_to = self.id)
 
     def related(self):
-        return self.site.questions(related_to=self.id)
+        return self.site.questions(related_to = self.id)
 
     def __repr__(self):
         return "<Question '%s' @ %x>" % (self.title, id(self))
@@ -477,7 +477,7 @@ class QuestionsQuery(object):
     def __init__(self, site):
         self.site = site
 
-    def __call__(self, ids=None, user_id=None, **kw):
+    def __call__(self, ids = None, user_id = None, **kw):
         self.site.check_filter(kw)
 
         # Compatibility hack, as user_id= was in versions below v1.1
@@ -503,7 +503,7 @@ class QuestionsQuery(object):
         kw['user_id'] = usr
         return self.site._user_prop('questions', Question, 'questions', kw)
 
-    def unanswered(self, by=None, **kw):
+    def unanswered(self, by = None, **kw):
         self.site.check_filter(kw)
 
         if by is None:
@@ -512,7 +512,7 @@ class QuestionsQuery(object):
             kw['user_id'] = by
             return self.site._user_prop('questions/unanswered', Question, 'questions', kw)
 
-    def no_answers(self, by=None, **kw):
+    def no_answers(self, by = None, **kw):
         self.site.check_filter(kw)
 
         if by is None:
@@ -530,3 +530,4 @@ class QuestionsQuery(object):
         self.site.check_filter(kw)
         kw['user_id'] = by
         return self.site._user_prop('favorites', Question, 'questions', kw)
+

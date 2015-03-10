@@ -11,7 +11,7 @@ class Site(object):
     """Stores information and provides methods to access data on a StackExchange site. This class is the 'root' of the API - all data is accessed
 through here."""
 
-    def __init__(self, domain, app_key=None, cache=1800, impose_throttling=False):
+    def __init__(self, domain, app_key = None, cache = 1800, impose_throttling = False):
         self.domain = domain
         self.app_key = app_key
         self.api_version = '2.2'
@@ -112,7 +112,7 @@ through here."""
 
         return json
 
-    def _user_prop(self, qs, typ, coll, kw, prop='user_id'):
+    def _user_prop(self, qs, typ, coll, kw, prop = 'user_id'):
         if prop not in kw:
             raise LookupError('No user ID provided.')
         else:
@@ -125,7 +125,7 @@ through here."""
         """Include the body and comments of a post, where appropriate, by default."""
         self.include_body, self.include_comments = True, True
 
-    def build(self, url, typ, collection, kw={}):
+    def build(self, url, typ, collection, kw = {}):
         """Builds a StackExchangeResultset object from the given URL and type."""
         if 'body' not in kw:
             kw['body'] = str(self.include_body).lower()
@@ -138,7 +138,7 @@ through here."""
     def build_from_snippet(self, json, typ):
         return StackExchangeResultSet([typ(x, self) for x in json])
 
-    def vectorise(self, lst, or_of_type=None):
+    def vectorise(self, lst, or_of_type = None):
         # Ensure we're always dealing with an iterable
         allowed_types = or_of_type
         if allowed_types is not None and not hasattr(allowed_types, '__iter__'):
@@ -163,7 +163,7 @@ through here."""
         u, = self.users((nid,), **kw)
         return u
 
-    def users(self, ids=[], **kw):
+    def users(self, ids = [], **kw):
         """Retrieves a list of the users with the IDs specified in the `ids' parameter."""
         return self._get(User, ids, 'users', kw)
     
@@ -180,7 +180,7 @@ through here."""
         a, = self.answers((nid,), **kw)
         return a
 
-    def answers(self, ids=None, **kw):
+    def answers(self, ids = None, **kw):
         """Retrieves a set of the answers with the IDs specified in the 'ids' parameter, or by the
         user_id specified."""
         self.check_filter(kw)
@@ -196,7 +196,7 @@ through here."""
         c, = self.comments((nid,), **kw)
         return c
 
-    def comments(self, ids=None, posts=None, **kw):
+    def comments(self, ids = None, posts = None, **kw):
         """Returns all the comments on the site."""
         if ids is None:
             if posts is None:
@@ -229,14 +229,14 @@ unlike on the actual site, you will receive an error rather than a redirect to t
         """Returns the set of all the badges which can be awarded on the site, excluding those which are awarded for specific tags."""
         return self.build('badges', Badge, 'badges', kw)
 
-    def badges(self, ids=None, **kw):
+    def badges(self, ids = None, **kw):
         """Returns the users with the badges with IDs."""
         if ids == None:
             return self._user_prop('badges', Badge, 'users', kw)
         else:
             return self._get(Badge, ids, 'users', kw)
 
-    def badge(self, nid = None, name=None, **kw):
+    def badge(self, nid = None, name = None, **kw):
         """Returns an object representing the badge with the ID 'nid', or with the name passed in as name=."""
         if nid is not None and name is None:
             b, = self.build('badges/%d' % nid, Badge, 'badges', kw)

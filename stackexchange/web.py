@@ -29,7 +29,7 @@ class WebRequestManager(object):
     debug = False
     cache = {}
 
-    def __init__(self, impose_throttling=False, throttle_stop=True, cache=True, cache_age=1800):
+    def __init__(self, impose_throttling = False, throttle_stop = True, cache = True, cache_age = 1800):
         # Whether to monitor requests for overuse of the API
         self.impose_throttling = impose_throttling
         # Whether to throw an error (when True) if the limit is reached, or wait until another request
@@ -129,7 +129,7 @@ class WebRequestManager(object):
         # proxies may send them to us decompressed.)
         if info.get('Content-Encoding') == 'gzip':
             data_stream = io.BytesIO(req_data)
-            gzip_stream = gzip.GzipFile(fileobj=data_stream)
+            gzip_stream = gzip.GzipFile(fileobj = data_stream)
 
             actual_data = gzip_stream.read()
         else:

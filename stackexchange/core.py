@@ -9,7 +9,7 @@ from six.moves import urllib
 class JSONModel(object):
     """The base class of all the objects which describe API objects directly - ie, those which take JSON objects as parameters to their constructor."""
 
-    def __init__(self, json, site, skip_ext=False):
+    def __init__(self, json, site, skip_ext = False):
         self.json = json
         self.json_ob = DictObject(json)
         self.site = site
@@ -141,7 +141,7 @@ class Enumeration(object):
     """Provides a base class for enumeration classes. (Similar to 'enum' types in other languages.)"""
 
     @classmethod
-    def from_string(cls, text, typ=None):
+    def from_string(cls, text, typ = None):
         'Returns the appropriate enumeration value for the given string, mapping underscored names to CamelCase, or the input string if a mapping could not be made.'
         if typ is not None:
             if hasattr(typ, '_map') and text in typ._map:
@@ -268,7 +268,7 @@ class StackExchangeLazySequence(list):
     """Provides a sequence which *can* contain extra data available on an object. It is 'lazy' in the sense that data is only fetched when
 required - not on object creation."""
 
-    def __init__(self, m_type, count, site, url, fetch=None, collection=None, **kw):
+    def __init__(self, m_type, count, site, url, fetch = None, collection = None, **kw):
         self.m_type = m_type
         self.count = count
         self.site = site
@@ -301,7 +301,7 @@ required - not on object creation."""
 class StackExchangeLazyObject(list):
     """Provides a proxy to fetching a single item from a collection, lazily."""
 
-    def __init__(self, m_type, site, url, fetch=None, collection=None):
+    def __init__(self, m_type, site, url, fetch = None, collection = None):
         self.m_type = m_type
         self.site = site
         self.url = url
@@ -352,7 +352,7 @@ class JSONMangler(object):
         return tuple([typ(x, site) for x in json['items']])
 
     @classmethod
-    def json_to_resultset(cls, site, json, typ, collection, params=None):
+    def json_to_resultset(cls, site, json, typ, collection, params = None):
         # this is somewhat of a special case, introduced by some filters in
         # post-2.0 allowing only 'metadata' to be returned
         if 'items' not in json:
