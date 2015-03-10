@@ -106,7 +106,10 @@ class ListOf(ComplexTransform):
         return []
 
     def __call__(self, key, value, model):
-        return map(self.transform, value)
+        if isinstance(self.transform, ComplexTransform):
+            return [self.transform(key, v, model) for v in value]
+        else:
+            return [self.transform(v) for v in value]
 
 class ModelRef(ComplexTransform):
     '''A convenience for foreign model references that take a JSON value and a reference to the underlying site object.'''
