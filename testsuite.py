@@ -178,9 +178,13 @@ class PlumbingTests(unittest.TestCase):
         self.assertTrue(hasattr(stacksites, 'SuperUser'))
     
     def test_error(self):
-        with self.assertRaises(StackExchangeError) as e:
+        try:
             self.site.error(401)
-        self.assertEqual(e.exception.code, 401)
+        except Exception as e:
+            self.assertEqual(type(e), StackExchangeError)
+            self.assertEqual(e.code, 401)
+        else:
+            self.fail('did not raise exception on error')
 
     def test_vectorise(self):
         # check different types
