@@ -1,5 +1,4 @@
-import operator, re, sys
-from six.moves import reduce
+import re, sys
 from stackexchange.core import *
 
 LaterClass = lambda name: LaterClassIn(name, sys.modules[__name__])
@@ -365,6 +364,7 @@ class User(JSONModel):
     # for compatibility reasons; association_id changed in v2.x
     alias = (('id', 'user_id'), ('association_id', 'account_id'),
              ('type', 'user_type', UserType.from_string))
+    badge_types = ('gold', 'silver', 'bronze')
 
     def _extend(self, json, site):
         user_questions_url = 'users/%d/questions' % self.id
@@ -378,17 +378,14 @@ class User(JSONModel):
         if hasattr(self, 'up_vote_count') and hasattr(self, 'down_vote_count'):
             self.vote_counts = (self.up_vote_count, self.down_vote_count)
 
-        gold = json.badge_counts['gold'] if 'gold' in json.badge_counts else 0
-        silver = json.badge_counts['silver'] if 'silver' in json.badge_counts else 0
-        bronze = json.badge_counts['bronze'] if 'bronze' in json.badge_counts else 0
-        self.badge_counts_t = (gold, silver, bronze)
-        self.badge_counts = {
-            BadgeType.Gold:   gold,
-            BadgeType.Silver: silver,
-            BadgeType.Bronze: bronze
-        }
+        self.badge_counts_t = tuple(json.badge_counts.get(c, 0) for c in ('gold', 'silver', 'bronze'))
         self.gold_badges, self.silver_badges, self.bronze_badges = self.badge_counts_t
-        self.badge_total = reduce(operator.add, self.badge_counts_t)
+        self.badge_counts = {
+            BadgeType.Gold:   self.gold_badges,
+            BadgeType.Silver: self.silver_badges,
+            BadgeType.Bronze: self.bronze_badges
+        }
+        self.badge_total = sum(self.badge_counts_t)
         self.is_moderator = self.type == UserType.Moderator
 
         self.url = 'http://' + self.site.root_domain + '/users/' + str(self.id)
