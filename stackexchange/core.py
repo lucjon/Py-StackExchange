@@ -14,9 +14,18 @@ class JSONModel(object):
         self.json_ob = DictObject(json)
         self.site = site
 
+        # an element of the transfer list is either a string describing a field
+        # name, or a tuple (name, type), where type is a type constructor for
+        # the value in JSON[name]
         for f in self.transfer:
-            if hasattr(self.json_ob, f):
-                setattr(self, f, getattr(self.json_ob, f))
+            if isinstance(f, str):
+                key = f
+                transform = lambda x: x
+            else:
+                key, transform = f
+
+            if hasattr(self.json_ob, key):
+                setattr(self, key, transform(getattr(self.json_ob, key)))
 
         if hasattr(self, '_extend') and not skip_ext:
             self._extend(self.json_ob, site)
@@ -56,6 +65,11 @@ new fetched data."""
         def inner(m):
             setattr(self, a, m)
         return inner
+
+# a convenience 'type constructor' for producing datetime's from UNIX timestamps
+UNIXTimestamp = lambda n: datetime.datetime.fromtimestamp(n)
+# a convenience for mapping over a list of typed values
+ListOf = lambda T: lambda L: [T(x) for x in L]
 
 class Enumeration(object):
     """Provides a base class for enumeration classes. (Similar to 'enum' types in other languages.)"""

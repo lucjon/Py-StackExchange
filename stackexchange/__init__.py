@@ -36,33 +36,31 @@ class MarkdownExtensions(Enumeration):
 
 class SiteDefinition(JSONModel):
     """Contains information about a StackExchange site, reported by StackAuth."""
-    transfer = ('aliases', 'api_site_parameter', 'audience', 'favicon_url', 'high_resolution_icon_url', 'icon_url', 'logo_url', 'name', 'open_beta_date', 'related_sites', 'site_state', 'site_type', 'site_url', 'twitter_account', 'api_site_parameter')
+    transfer = ('aliases', 'api_site_parameter', 'audience', 'favicon_url',
+        'high_resolution_icon_url', 'icon_url', 'logo_url', 'name', 'open_beta_date',
+        'related_sites', 'site_state', 'site_type', 'site_url', 'twitter_account',
+        'api_site_parameter',
+        ('closed_beta_date', UNIXTimestamp),
+        ('open_beta_date', UNIXTimestamp),
+        ('launch_date', UNIXTimestamp),
+        ('markdown_extensions', ListOf(MarkdownExtensions.from_string)),
+        ('site_state', SiteState.from_string),
+        ('site_type', SiteType.from_string),
+        ('styling', DictObject))
+
 
     def _extend(self, json, stackauth):
-        fixed_state = re.sub(r'_([a-z])', lambda match: match.group(1).upper(), json.site_state)
-        fixed_state = fixed_state[0].upper() + fixed_state[1:]
-
         # To maintain API compatibility only; strictly speaking, we should use api_site_parameter
         # to create new sites, and that's what we do in get_site()
         self.api_endpoint = self.site_url
         # Also to maintain rough API compatibility
         self.description = json.audience
 
-        if hasattr(json, 'closed_beta_date'):
-            self.closed_beta_date = datetime.datetime.fromtimestamp(json.closed_beta_date)
-        if hasattr(json, 'open_beta_date'):
-            self.open_beta_date = datetime.datetime.fromtimestamp(json.open_beta_date)
-        if hasattr(json, 'markdown_extensions'):
-            self.markdown_extensions = [MarkdownExtensions.from_string(m) for m in json.markdown_extensions]
-        if hasattr(json, 'launch_date'):
-            # This field is not marked optional in the documentation, but for some reason certain
-            # meta sites omit it nonetheless
-            self.launch_date = datetime.datetime.fromtimestamp(json.launch_date)
-
-        self.site_state = SiteState.from_string(json.site_state)
-        self.site_type = SiteType.from_string(json.site_type)
+        # The usual enumeration heuristics need a bit of help to parse the
+        # site state as returned by the API
+        fixed_state = re.sub(r'_([a-z])', lambda match: match.group(1).upper(), json.site_state)
+        fixed_state = fixed_state[0].upper() + fixed_state[1:]
         self.state = SiteState.from_string(fixed_state)
-        self.styling = DictObject(json.styling)
     
     def get_site(self, *a, **kw):
         return Site(self.api_site_parameter, *a, **kw)
@@ -70,7 +68,10 @@ class SiteDefinition(JSONModel):
 ##### Statistics    ###
 class Statistics(JSONModel):
     """Stores statistics for a StackExchange site."""
-    transfer = ('new_active_users', 'total_users', 'badges_per_minute', 'total_badges', 'total_votes', 'total_comments', 'answers_per_minute', 'questions_per_minute', 'total_answers', 'total_accepted', 'total_unanswered', 'total_questions', 'api_revision')
+    transfer = ('new_active_users', 'total_users', 'badges_per_minute',
+        'total_badges', 'total_votes', 'total_comments', 'answers_per_minute',
+        'questions_per_minute', 'total_answers', 'total_accepted',
+        'total_unanswered', 'total_questions', 'api_revision')
 
     def _extend(self, json, site):
         if hasattr(json, 'site'):
@@ -82,8 +83,11 @@ class Statistics(JSONModel):
 class Answer(JSONModel):
     """Describes an answer on a StackExchange site."""
 
-    transfer = ('is_accepted', 'locked_date', 'question_id', 'up_vote_count', 'down_vote_count', 'view_count', 'score',
-        'community_owned', 'title', 'body')
+    transfer = ('is_accepted', 'locked_date', 'question_id', 'up_vote_count',
+        'down_vote_count', 'view_count', 'score', 'community_owned', 'title',
+        'body', ('creation_date', UNIXTimestamp),
+        ('last_edit_date', UNIXTimestamp),
+        ('last_activity_date', UNIXTimestamp))
 
     def _extend(self, json, site):
         self.id = json.answer_id
@@ -101,13 +105,6 @@ class Answer(JSONModel):
         if hasattr(json, 'owner'):
             self.owner_id = json.owner.get('user_id')
             self.owner_info = tuple(json.owner.values())
-
-        self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-
-        if hasattr(json, 'last_edit_date'):
-            self.last_edit_date = datetime.date.fromtimestamp(json.last_edit_date)
-        if hasattr(json, 'last_activity_date'):
-            self.last_activity_date = datetime.date.fromtimestamp(json.last_activity_date)
 
         self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'posts/%s/revisions' % self.id, self._up('revisions'), 'revisions')
 
@@ -149,7 +146,9 @@ class Answer(JSONModel):
 
 class Question(JSONModel):
     """Describes a question on a StackExchange site."""
-    transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count', 'view_count', 'score', 'community_owned', 'title', 'body')
+    transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count',
+        'view_count', 'score', 'community_owned', 'title', 'body',
+        ('creation_date', UNIXTimestamp))
 
     def _extend(self, json, site):
         self.id = json.question_id
@@ -157,8 +156,6 @@ class Question(JSONModel):
         timeline_url = 'questions/%d/timeline' % self.id
         self.timeline = StackExchangeLazySequence(TimelineEvent, None, site, timeline_url, self._up('timeline'))
         self.revisions = StackExchangeLazySequence(PostRevision, None, site, 'posts/%s/revisions' % self.id, self._up('revisions'), 'revisions')
-
-        self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 
         comments_url = 'questions/%d/comments' % self.id
         self.comments = StackExchangeLazySequence(Comment, None, site, comments_url, self._up('comments'), filter = '!-*7AsUyrEan0')
@@ -194,14 +191,17 @@ class Question(JSONModel):
     def __repr__(self):
         return "<Question '%s' @ %x>" % (self.title, id(self))
 
+class PostType(Enumeration):
+    """Denotes the type of a post: a question or an answer."""
+    Question, Answer = 'question', 'answer'
+
 class Comment(JSONModel):
     """Describes a comment to a question or answer on a StackExchange site."""
+    transfer = ('post_id', 'score', 'edit_count', 'body',
+        ('creation_date', UNIXTimestamp), ('post_type', PostType.from_string))
 
-    transfer = ('post_id', 'score', 'edit_count', 'body')
     def _extend(self, json, site):
         self.id = json.comment_id
-
-        self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
 
         if hasattr(json, 'owner'):
             self.owner_id = json.owner['owner_id'] if 'owner_id' in json.owner else json.owner['user_id']
@@ -222,9 +222,6 @@ class Comment(JSONModel):
                 'display_name': json.reply_to['display_name'],
                 'reputation': json.reply_to['reputation'],
                 'profile_image': json.reply_to['profile_image']})
-
-        if hasattr(json, 'post_type'):
-            self.post_type = PostType.from_string(json.post_type)
 
     def _get_post(self):
         if self.post_type == PostType.Question:
@@ -247,13 +244,13 @@ class RevisionType(Enumeration):
     VoteBased  = 'vote_based'
 
 class PostRevision(JSONModel):
-    transfer = ('body', 'comment', 'is_question', 'is_rollback', 'last_body', 'last_title', 'revision_guid',
-                'revision_number', 'title', 'set_community_wiki', 'post_id', 'last_tags', 'tags')
+    transfer = ('body', 'comment', 'is_question', 'is_rollback', 'last_body',
+        'last_title', 'revision_guid', 'revision_number', 'title',
+        'set_community_wiki', 'post_id', 'last_tags', 'tags',
+        ('creation_date', UNIXTimestamp),
+        ('revision_type', RevisionType.from_string))
 
     def _extend(self, json, site):
-        self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-        self.revision_type = RevisionType.from_string(json.revision_type)
-
         part = json.user
         self.user = User.partial(lambda self: self.site.user(self.id), site, {
             'id': part['user_id'],
@@ -280,23 +277,19 @@ class PostRevision(JSONModel):
 
 ##### Tags #####
 class TagSynonym(JSONModel):
-    transfer = ('from_tag', 'to_tag', 'applied_count')
-
-    def _extend(self, json, site):
-        self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-        if hasattr(json, 'last_applied_date'):
-            self.last_applied_date = datetime.date.fromtimestamp(json.last_applied_date)
+    transfer = ('from_tag', 'to_tag', 'applied_count',
+        ('creation_date', UNIXTimestamp),
+        ('last_applied_date', UNIXTimestamp))
 
     def __repr__(self):
         return "<TagSynonym '%s'->'%s'>" % (self.from_tag, self.to_tag)
 
 class TagWiki(JSONModel):
-    transfer = ('tag_name', 'body', 'excerpt')
+    transfer = ('tag_name', 'body', 'excerpt',
+        ('body_last_edit_date', UNIXTimestamp),
+        ('excerpt_last_edit_date', UNIXTimestamp))
 
     def _extend(self, json, site):
-        self.body_last_edit_date = datetime.date.fromtimestamp(json.body_last_edit_date)
-        self.excerpt_last_edit_date = datetime.date.fromtimestamp(json.excerpt_last_edit_date)
-
         if hasattr(json, 'last_body_editor'):
             body_editor = dict(json.last_body_editor)
             body_editor['id'] = body_editor['user_id']
@@ -361,10 +354,10 @@ class Badge(JSONModel):
 
 class RepChange(JSONModel):
     """Describes an event which causes a change in reputation."""
+    transfer = ('user_id', 'post_id', 'post_type', 'title', 'positive_rep',
+        'negative_rep', ('on_date', UNIXTimestamp))
 
-    transfer = ('user_id', 'post_id', 'post_type', 'title', 'positive_rep', 'negative_rep')
     def _extend(self, json, site):
-        self.on_date = datetime.date.fromtimestamp(json.on_date)
         if hasattr(json, 'positive_rep') and hasattr(json, 'negative_rep'):
             self.score = json.positive_rep - json.negative_rep
 
@@ -380,12 +373,11 @@ class TimelineEventType(Enumeration):
     Accepted = 'accepted'
 
 class TimelineEvent(JSONModel):
-    transfer = ('user_id', 'post_id', 'comment_id', 'action', 'description', 'detail', 'comment_id')
+    transfer = ('user_id', 'post_id', 'comment_id', 'action', 'description',
+        'detail', 'comment_id', ('timeline_type', TimelineEventType.from_string))
     _post_related = (TimelineEventType.AskOrAnswered, TimelineEventType.Revision, TimelineEventType.Comment)
 
     def _extend(self, json, site):
-        self.timeline_type = TimelineEventType.from_string(json.timeline_type)
-
         if self.timeline_type in self._post_related:
             self.post_type = PostType.from_string(json.post_type)
             self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
@@ -417,10 +409,6 @@ class TimelineEvent(JSONModel):
 
 ##############
 
-class PostType(Enumeration):
-    """Denotes the type of a post: a question or an answer."""
-    Question, Answer = 'question', 'answer'
-
 class UserType(Enumeration):
     """Denotes the status of a user on a site: whether it is Anonymous, Unregistered, Registered or a Moderator."""
     Anonymous = 'anonymous'
@@ -451,14 +439,15 @@ class TopTag(JSONModel):
 
 class User(JSONModel):
     """Describes a user on a StackExchange site."""
+    transfer = ('display_name', 'profile_image', 'age', 'website_url',
+        'location', 'about_me', 'view_count', 'up_vote_count',
+        'down_vote_count', 'account_id', 'profile_image',
+        ('creation_date', UNIXTimestamp),
+        ('last_access_date', UNIXTimestamp),
+        ('reputation', FormattedReputation))
 
-    transfer = ('display_name', 'profile_image', 'age', 'website_url', 'location', 'about_me',
-        'view_count', 'up_vote_count', 'down_vote_count', 'account_id', 'profile_image')
     def _extend(self, json, site):
         self.id = json.user_id
-        self.creation_date = datetime.datetime.fromtimestamp(json.creation_date)
-        self.last_access_date = datetime.date.fromtimestamp(json.last_access_date)
-        self.reputation = FormattedReputation(json.reputation)
 
         # for compatibility reasons; this field name changed in v2.x
         self.association_id = json.account_id
