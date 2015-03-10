@@ -7,6 +7,60 @@ from stackexchange.web import WebRequestManager
 from stackexchange.core import *
 from stackexchange.models import *
 
+##### Site metadata ###
+# (originally in the stackauth module; now we need it for Site#info)
+
+class SiteState(Enumeration):
+    """Describes the state of a StackExchange site."""
+    Normal, OpenBeta, ClosedBeta, LinkedMeta = range(4)
+
+class SiteType(Enumeration):
+    '''Describes the type (meta or non-meta) of a StackExchange site.'''
+    MainSite, MetaSite = range(2)
+
+class MarkdownExtensions(Enumeration):
+    '''Specifies one of the possible extensions to Markdown a site can have enabled.'''
+    MathJax, Prettify, Balsamiq, JTab = range(4)
+
+class SiteDefinition(JSONModel):
+    """Contains information about a StackExchange site, reported by StackAuth."""
+    transfer = ('aliases', 'api_site_parameter', 'audience', 'favicon_url',
+        'high_resolution_icon_url', 'icon_url', 'logo_url', 'name', 'open_beta_date',
+        'related_sites', 'site_state', 'site_type', 'site_url', 'twitter_account',
+        'api_site_parameter',
+        ('closed_beta_date', UNIXTimestamp),
+        ('open_beta_date', UNIXTimestamp),
+        ('launch_date', UNIXTimestamp),
+        ('markdown_extensions', ListOf(MarkdownExtensions.from_string)),
+        ('site_state', SiteState.from_string),
+        ('site_type', SiteType.from_string),
+        ('styling', DictObject))
+
+    # To maintain API compatibility only; strictly speaking, we should use api_site_parameter
+    # to create new sites, and that's what we do in get_site()
+    alias = (('api_endpoint', 'site_url'), ('description', 'audience'))
+
+
+    def _extend(self, json, stackauth):
+        # The usual enumeration heuristics need a bit of help to parse the
+        # site state as returned by the API
+        fixed_state = re.sub(r'_([a-z])', lambda match: match.group(1).upper(), json.site_state)
+        fixed_state = fixed_state[0].upper() + fixed_state[1:]
+        self.state = SiteState.from_string(fixed_state)
+    
+    def get_site(self, *a, **kw):
+        return Site(self.api_site_parameter, *a, **kw)
+
+##### Statistics    ###
+class Statistics(JSONModel):
+    """Stores statistics for a StackExchange site."""
+    transfer = ('new_active_users', 'total_users', 'badges_per_minute',
+        'total_badges', 'total_votes', 'total_comments', 'answers_per_minute',
+        'questions_per_minute', 'total_answers', 'total_accepted',
+        'total_unanswered', 'total_questions', 'api_revision')
+    alias = (('site_definition', 'site', ModelRef(SiteDefinition)),)
+
+
 class Site(object):
     """Stores information and provides methods to access data on a StackExchange site. This class is the 'root' of the API - all data is accessed
 through here."""
