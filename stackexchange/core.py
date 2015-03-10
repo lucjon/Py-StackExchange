@@ -14,18 +14,33 @@ class JSONModel(object):
         self.json_ob = DictObject(json)
         self.site = site
 
-        # an element of the transfer list is either a string describing a field
-        # name, or a tuple (name, type), where type is a type constructor for
-        # the value in JSON[name]
-        for f in self.transfer:
-            if isinstance(f, str):
-                key = f
-                transform = lambda x: x
-            else:
-                key, transform = f
+        # we have four ways of specifying a field:
+        #   - ('a', 'b') in alias: .a = JSON.b
+        #   - 'name' in transfer: .name = JSON.name
+        #   - ('a', 'b', t) in alias: .a = t(JSON.b)
+        #   - ('name', t) in transfer: .name = t(JSON.name)
+        # we unify these all into one set of descriptions
+        alias = self.alias if hasattr(self, 'alias') else ()
+        transfer = self.transfer if hasattr(self, 'transfer') else ()
+        fields = ([A + (None,) for A in alias if len(A) == 2] +
+                  [(k, k, None) for k in transfer if isinstance(k, str)] +
+                  [A for A in alias if len(A) == 3] + 
+                  [(k[0],) + k for k in transfer if not isinstance(k, str)])
 
+        for dest, key, transform in fields:
             if hasattr(self.json_ob, key):
-                setattr(self, key, transform(getattr(self.json_ob, key)))
+                value = getattr(self.json_ob, key)
+
+                if isinstance(transform, ComplexTransform):
+                    value = transform(key, value, self)
+                elif transform is not None:
+                    value = transform(value)
+
+                setattr(self, dest, value)
+            elif isinstance(transform, ComplexTransform):
+                value = transform.no_value(key, self)
+                if value is not None:
+                    setattr(self, dest, value)
 
         if hasattr(self, '_extend') and not skip_ext:
             self._extend(self.json_ob, site)
@@ -66,10 +81,61 @@ new fetched data."""
             setattr(self, a, m)
         return inner
 
+def LaterClassIn(name, module):
+    def constructor(*a, **kw):
+        cls = getattr(module, name)
+        return cls(*a, **kw)
+    constructor.__name__ = name
+    return constructor
+
 # a convenience 'type constructor' for producing datetime's from UNIX timestamps
 UNIXTimestamp = lambda n: datetime.datetime.fromtimestamp(n)
-# a convenience for mapping over a list of typed values
-ListOf = lambda T: lambda L: [T(x) for x in L]
+
+# Some transforms are more complicated and need access to the model object
+# itself, including Sites, etc. This is a base class to indicate this to the
+# constructor.
+class ComplexTransform(object):
+    def no_value(self, key, model):
+        pass
+
+class ListOf(ComplexTransform):
+    def __init__(self, transform):
+        self.transform = transform
+
+    def no_value(self, key, model):
+        return []
+
+    def __call__(self, key, value, model):
+        return map(self.transform, value)
+
+class ModelRef(ComplexTransform):
+    '''A convenience for foreign model references that take a JSON value and a reference to the underlying site object.'''
+    def __init__(self, model_type):
+        self.model_type = model_type
+
+    def __call__(self, key, value, model):
+        return self.model_type(value, model.site)
+
+class LazySequenceField(ComplexTransform):
+    def __init__(self, m_type, url_format, count = None, update_key = None, response_key = None, **kw):
+        self.m_type = m_type
+        self.url_format = url_format
+        self.count = count
+        self.update_key = update_key
+        self.response_key = response_key
+        self.kw = kw
+
+    def no_value(self, key, model):
+        model_id = getattr(model, 'id', getattr(model.json_ob, key + '_id', None))
+        url = self.url_format.format(id = model_id)
+        response_key = key if self.response_key is None else self.response_key
+        update_key = key if self.update_key is None else self.update_key
+        return StackExchangeLazySequence(self.m_type, self.count, model.site,
+                                            url, model._up(update_key),
+                                            response_key, **self.kw)
+
+    def __call__(self, key, value, model):
+        return self.no_value(key, model)
 
 class Enumeration(object):
     """Provides a base class for enumeration classes. (Similar to 'enum' types in other languages.)"""
