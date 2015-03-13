@@ -48,7 +48,7 @@ class JSONModel(object):
     def fetch(self):
         """Fetches all the data that the model can describe, not just the attributes which were specified in the original response."""
         if hasattr(self, 'fetch_callback'):
-            res = self.fetch_callback(self, self.site)
+            res = self.fetch_callback(self)
 
             if isinstance(res, dict):
                 self.__init__(res, self.site)

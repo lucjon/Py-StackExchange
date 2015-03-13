@@ -1,6 +1,6 @@
 import logging
 
-import re, stackauth, stackexchange, stackexchange.web, unittest
+import datetime, re, stackauth, stackexchange, stackexchange.web, unittest
 import stackexchange.sites as stacksites
 from stackexchange.core import StackExchangeError
 # for Python 3 compatiblity
@@ -217,12 +217,16 @@ class PlumbingTests(unittest.TestCase):
 
         # Exhaust the first search.
         while len(a_search) > 0:
-                a_search = a_search.fetch_next()
+            a_search = a_search.fetch_next()
 
         # Try get the next page of the second search. It will be empty.
         # Here's the bug.
         self.assertEqual(len(b_search.fetch_next()), 100)
 
+    def test_partial(self):
+        qn = self.site.question(4)
+        comment = qn.comments.fetch()[0]
+        owner = comment.owner.fetch()
 
 if __name__ == '__main__':
     unittest.main()
