@@ -118,15 +118,14 @@ class Comment(JSONModel):
                 'reputation': json.reply_to['reputation'],
                 'profile_image': json.reply_to['profile_image']})
 
-    def _get_post(self):
+    @property
+    def post(self):
         if self.post_type == PostType.Question:
             return self.site.question(self.post_id)
         elif self.post_type == PostType.Answer:
             return self.site.answer(self.post_id)
         else:
             return None
-
-    post = property(_get_post)
 
     def __unicode__(self):
         return u'Comment ' + str(self.id)
