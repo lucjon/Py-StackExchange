@@ -243,13 +243,12 @@ to the initial function which created the resultset."""
         return self.next()
 
     def next(self):
-        for obj in self.items:
-            yield obj
-
         current = self
-        while current.has_more:
+        while True:
             for obj in current.items:
                 yield obj
+            if not current.has_more:
+                return
 
             try:
                 current = current.fetch_next()
