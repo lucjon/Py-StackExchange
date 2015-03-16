@@ -197,6 +197,22 @@ class PlumbingTests(unittest.TestCase):
         self.assertTrue(hasattr(r, 'total'))
         self.assertTrue(r.total > 0)
 
+    def test_pagesize_independence(self):
+        # this test is motivated by pull request #37
+
+        # a slightly odd choice of tag indeed, but it has a modest but useful
+        # number of questions and is unlikely to grow very quickly
+        qs = self.site.questions(tagged = 'kruskals-algorithm', pagesize = 37, filter = '!9YdnSQVoS')
+        total1 = qs.total
+        count1 = len(list(qs))
+        self.assertEqual(count1, total1)
+
+        qs = self.site.questions(tagged = 'kruskals-algorithm', pagesize = 100, filter = '!9YdnSQVoS')
+        total2 = qs.total
+        count2 = len(list(qs))
+        self.assertEqual(count2, total2)
+        self.assertEqual(count1, count2)
+
     def test_resultset_independence(self):
         # repro code for bug #4 (thanks, beaumartinez!)
 
