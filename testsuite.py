@@ -202,7 +202,7 @@ class PlumbingTests(unittest.TestCase):
 
         # a slightly odd choice of tag indeed, but it has a modest but useful
         # number of questions and is unlikely to grow very quickly
-        qs = self.site.questions(tagged = 'kruskals-algorithm', pagesize = 37, filter = '!9YdnSQVoS')
+        qs = self.site.questions(tagged = 'dijkstra', pagesize = 37, filter = '!9YdnSQVoS')
         total1 = qs.total
         count1 = len(list(qs))
         self.assertEqual(count1, total1)
