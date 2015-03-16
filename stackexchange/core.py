@@ -289,6 +289,12 @@ required - not on object creation."""
         else:
             raise NeedsAwokenError(self)
 
+    def __repr__(self):
+        if self.count is None:
+            return '<unfetched sequence: %s>' % self.m_type.__name__
+        else:
+            return list.__repr__(self)
+
     def fetch(self, **direct_kw):
         """Fetch, from the API, the data this sequence is meant to hold."""
         # If we have any default parameters, include them, but overwrite any
