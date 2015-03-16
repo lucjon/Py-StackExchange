@@ -207,7 +207,7 @@ class PlumbingTests(unittest.TestCase):
         count1 = len(list(qs))
         self.assertEqual(count1, total1)
 
-        qs = self.site.questions(tagged = 'kruskals-algorithm', pagesize = 100, filter = '!9YdnSQVoS')
+        qs = self.site.questions(tagged = 'dijkstra', pagesize = 100, filter = '!9YdnSQVoS')
         total2 = qs.total
         count2 = len(list(qs))
         self.assertEqual(count2, total2)
