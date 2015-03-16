@@ -373,12 +373,12 @@ class JSONMangler(object):
             # this isn't paginated (unlikely but possible - eg badges)
             return cls.normal_to_resultset(site, json, typ, collection)
 
-def format_relative_date(date):
-    """Takes a datetime object and returns the date formatted as a string e.g. "3 minutes ago", like the real site.
-    This is based roughly on George Edison's code from StackApps:
-    http://stackapps.com/questions/1009/how-to-format-time-since-xxx-e-g-4-minutes-ago-similar-to-stack-exchange-site/1018#1018"""
+def format_relative_date(date, relative_to = None):
+    """Takes a datetime object and returns the date formatted as a string e.g. "3 minutes ago", like the real site, relative to the given datetime. If no datetime is given, default to the current time."""
+    # This is based roughly on George Edison's code from StackApps:
+    #   http://stackapps.com/questions/1009/how-to-format-time-since-xxx-e-g-4-minutes-ago-similar-to-stack-exchange-site/1018#1018"""
 
-    now = datetime.datetime.now()
+    now = datetime.datetime.now() if relative_to is None else relative_to
     diff = (now - date).seconds
 
     # Anti-repetition! These simplify the code somewhat.
