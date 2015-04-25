@@ -137,7 +137,7 @@ class Answer(JSONModel):
 
     transfer = ('is_accepted', 'locked_date', 'question_id', 'up_vote_count',
         'down_vote_count', 'view_count', 'score', 'community_owned', 'title',
-        'body', ('creation_date', UNIXTimestamp),
+        'body', 'body_markdown', ('creation_date', UNIXTimestamp),
         ('last_edit_date', UNIXTimestamp),
         ('last_activity_date', UNIXTimestamp),
         ('revisions', LazySequenceField(PostRevision, 'posts/{id}/revisions')))
@@ -197,6 +197,7 @@ class Question(JSONModel):
     """Describes a question on a StackExchange site."""
     transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count',
         'view_count', 'score', 'community_owned', 'title', 'body',
+        'body_markdown',
         ('creation_date', UNIXTimestamp),
         ('timeline', LazySequenceField(TimelineEvent, 'questions/{id}/timeline')),
         ('revisions', LazySequenceField(PostRevision, 'posts/{id}/revisions')),
