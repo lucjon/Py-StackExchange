@@ -10,7 +10,7 @@ sys.path.append('..')
 user_api_key = input("Please enter an API key if you have one (Return for none):")
 if not user_api_key: user_api_key = None
 
-import stackexchange, thread
+import stackexchange
 so = stackexchange.Site(stackexchange.StackOverflow, app_key=user_api_key, impose_throttling=True)
 so.be_inclusive()
 
@@ -21,11 +21,11 @@ questions = so.recent_questions(pagesize=10, filter='_b')
 print('\r #  vote ans view')
 
 cur = 1
-for question in questions:
+for question in questions[:10]:
     print('%2d %3d  %3d  %3d \t%s' % (cur, question.score, len(question.answers), question.view_count, question.title))
     cur += 1
 
-num = int(get_input('Question no.: '))
+num = int(input('Question no.: '))
 qu  = questions[num - 1]
 print('--- %s' % qu.title)
 print('%d votes, %d answers, %d views.' % (qu.score, len(qu.answers), qu.view_count))
