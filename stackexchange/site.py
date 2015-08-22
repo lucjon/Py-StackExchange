@@ -372,6 +372,12 @@ Call with site=True to receive a SiteDefinition object representing this site in
     def tag(self, tag, **kw):
         return self.build('tags/%s/info' % tag, Tag, 'tags', kw)[0]
 
+    def tag_wiki(self, tag, **kw):
+        return self.build('tags/%s/wikis' % tag, TagWiki, 'tags', kw)
+
+    def tag_related(self, tag, **kw):
+        return self.build('tags/%s/related' % tag, Tag, 'tags', kw)
+
     def tag_synonyms(self, **kw):
         return self.build('tags/synonyms', TagSynonym, 'tag_synonyms', kw)
 
