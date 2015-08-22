@@ -92,7 +92,21 @@ class DataTests(unittest.TestCase):
         self.assertEqual(tag.name, 'javascript')
         wiki = tag.wiki.fetch()
         self.assertTrue(len(wiki.excerpt) > 0)
-    
+
+    def test_tag_wiki2(self):
+        wiki = self.site.tag_wiki('javascript')
+        self.assertEqual(wiki[0].tag_name, 'javascript')
+        wiki = self.site.tag_wiki('java;c++;python;android', page=1, pagesize=4)
+        self.assertEqual(wiki[0].tag_name, 'android')
+        self.assertEqual(wiki[1].tag_name, 'c++')
+        self.assertEqual(wiki[2].tag_name, 'java')
+        self.assertEqual(wiki[3].tag_name, 'python')
+
+    def test_tag_related(self):
+        related = self.site.tag_related('java', page=1, pagesize=40)
+        self.assertEqual(related[0].name, 'android')
+        self.assertEqual(related[1].name, 'swing')
+
     def test_badge_name(self):
         badge = self.site.badge(name = 'Nice Answer')
         self.assertNotEqual(badge, None)
