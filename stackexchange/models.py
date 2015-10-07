@@ -1,3 +1,4 @@
+from __futures__ import unicode_literals
 import re, sys
 from stackexchange.core import *
 
@@ -130,7 +131,7 @@ class Comment(JSONModel):
     def __unicode__(self):
         return u'Comment ' + str(self.id)
     def __str__(self):
-        return str(unicode(self))
+        return str(self.__unicode__(self))
 
 class Answer(JSONModel):
     """Describes an answer on a StackExchange site."""
@@ -188,7 +189,7 @@ class Answer(JSONModel):
         return u'Answer %d' % self.id
 
     def __str__(self):
-        return str(unicode(self))
+        return str(self.__unicode__(self))
 
     def __repr__(self):
         return '<Answer %d @ %x>' % (self.id, id(self))
@@ -409,7 +410,7 @@ class User(JSONModel):
     def __unicode__(self):
         return 'User %d [%s]' % (self.id, self.display_name)
     def __str__(self):
-        return str(unicode(self))
+        return str(self.__unicode__(self))
     def __repr__(self):
         return "<User '%s' (%d) @ %x>" % (self.display_name, self.id, id(self))
 
