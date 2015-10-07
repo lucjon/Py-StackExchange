@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-# a hack so you can run it 'python demo/stats.py'
+# a hack so you can run it 'python demo/search.py'
 import sys
 sys.path.append('.')
 sys.path.append('..')
