@@ -103,7 +103,7 @@ class WebRequestManager(object):
                 WebRequestManager.num_requests = 0
             WebRequestManager.num_requests += 1
             if WebRequestManager.num_requests > 30:
-                halt(5 - (WebRequestManager.window - now).seconds)
+                halt(5 - (now - WebRequestManager.window).seconds)
 
         # We definitely do need to go out to the internet, so make the real request
         self.debug_print('R>', url)
