@@ -173,6 +173,16 @@ class DataTests(unittest.TestCase):
         result = self.site.info(site = True)
         self.assertNotEqual(result.site_definition, None)
         self.assertTrue(len(result.site_definition.name) > 0)
+    
+    def test_badge_recipients(self):
+        results = self.site.badge_recipients(22)
+        self.assertTrue(len(results) > 0)
+        self.assertTrue(hasattr(results[0], 'user'))
+        self.assertTrue(hasattr(results[0].user, 'id'))
+
+    def test_badge_recipients_field(self):
+        results = self.site.badge(22).recipients
+        self.assertNotEqual(next(results), None)
 
 
 class PlumbingTests(unittest.TestCase):

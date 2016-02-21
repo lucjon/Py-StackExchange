@@ -287,21 +287,6 @@ class Tag(JSONModel):
     def top_answerers(self, period, **kw):
         return self.site.build('tags/%s/top-answerers/%s' % (self.name, period), TopUser, 'top_users', kw)
 
-class BadgeType(Enumeration):
-    """Describes the rank or type of a badge: one of Bronze, Silver or Gold."""
-    Bronze, Silver, Gold = range(3)
-
-class Badge(JSONModel):
-    """Describes a badge awardable on a StackExchange site."""
-    transfer = ('name', 'description', 'award_count', 'tag_based',
-                ('recipients', LazySequenceField(LaterClass('User'), 'badges/{id}/recipients')))
-    alias = (('id', 'badge_id'),)
-
-    def __str__(self):
-        return self.name
-    def __repr__(self):
-        return '<Badge \'%s\' @ %x>' % (self.name, id(self))
-
 class RepChange(JSONModel):
     """Describes an event which causes a change in reputation."""
     transfer = ('user_id', 'post_id', 'post_type', 'title', 'positive_rep',
@@ -352,7 +337,7 @@ class User(JSONModel):
         ('unanswered_questions', LazySequenceField(Question, 'users/{id}/questions/unanswered', response_key = 'questions')),
         ('unaccepted_questions', LazySequenceField(Question, 'users/{id}/questions/unaccepted', response_key = 'questions')),
         ('tags', LazySequenceField(Tag, 'users/{id}/tags')),
-        ('badges', LazySequenceField(Badge, 'users/{id}/badges')),
+        ('badges', LazySequenceField(LaterClass('Badge'), 'users/{id}/badges')),
         ('timeline', LazySequenceField(TimelineEvent, 'users/{id}/timeline', response_key = 'user_timelines')),
         ('reputation_detail', LazySequenceField(RepChange, 'users/{id}/reputation')),
         ('mentioned', LazySequenceField(Comment, 'users/{id}/mentioned', response_key = 'comments')),
@@ -378,15 +363,18 @@ class User(JSONModel):
         if hasattr(self, 'up_vote_count') and hasattr(self, 'down_vote_count'):
             self.vote_counts = (self.up_vote_count, self.down_vote_count)
 
-        self.badge_counts_t = tuple(json.badge_counts.get(c, 0) for c in ('gold', 'silver', 'bronze'))
-        self.gold_badges, self.silver_badges, self.bronze_badges = self.badge_counts_t
-        self.badge_counts = {
-            BadgeType.Gold:   self.gold_badges,
-            BadgeType.Silver: self.silver_badges,
-            BadgeType.Bronze: self.bronze_badges
-        }
-        self.badge_total = sum(self.badge_counts_t)
-        self.is_moderator = self.type == UserType.Moderator
+        if hasattr(json, 'badge_counts'):
+            self.badge_counts_t = tuple(json.badge_counts.get(c, 0) for c in ('gold', 'silver', 'bronze'))
+            self.gold_badges, self.silver_badges, self.bronze_badges = self.badge_counts_t
+            self.badge_counts = {
+                BadgeType.Gold:   self.gold_badges,
+                BadgeType.Silver: self.silver_badges,
+                BadgeType.Bronze: self.bronze_badges
+            }
+            self.badge_total = sum(self.badge_counts_t)
+
+        if hasattr(self, 'type'):
+            self.is_moderator = self.type == UserType.Moderator
 
         self.url = 'http://' + self.site.root_domain + '/users/' + str(self.id)
 
@@ -412,6 +400,26 @@ class User(JSONModel):
         return str(unicode(self))
     def __repr__(self):
         return "<User '%s' (%d) @ %x>" % (self.display_name, self.id, id(self))
+
+class BadgeType(Enumeration):
+    """Describes the rank or type of a badge: one of Bronze, Silver or Gold."""
+    Bronze, Silver, Gold = range(3)
+
+class Badge(JSONModel):
+    """Describes a badge awardable on a StackExchange site."""
+    transfer = ('name', 'description', 'award_count', 'tag_based',
+                ('user', PartialModelRef(User, lambda s: s.site.user(s.id), extend = True)))
+    alias = (('id', 'badge_id'),)
+
+    @property
+    def recipients(self):
+        for badge in self.site.badge_recipients([self.id]):
+            yield badge.user
+
+    def __str__(self):
+        return self.name
+    def __repr__(self):
+        return '<Badge \'%s\' @ %x>' % (self.name, id(self))
 
 class Privilege(JSONModel):
     transfer = ('short_description', 'description', 'reputation')

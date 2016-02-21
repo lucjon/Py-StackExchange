@@ -119,6 +119,20 @@ class ModelRef(ComplexTransform):
     def __call__(self, key, value, model):
         return self.model_type(value, model.site)
 
+class PartialModelRef(ComplexTransform):
+    def __init__(self, model_type, callback, extend = False):
+        self.model_type = model_type
+        self.callback = callback
+        self.extend = extend
+
+    def __call__(self, key, value, model):
+        if self.extend:
+            value = self.model_type(value, model.site, True)
+            value.fetch_callback = self.callback
+            return value
+        else:
+            return self.model_type.partial(self.callback, model.site, value)
+
 class LazySequenceField(ComplexTransform):
     def __init__(self, m_type, url_format, count = None, update_key = None, response_key = None, **kw):
         self.m_type = m_type

@@ -275,16 +275,16 @@ unlike on the actual site, you will receive an error rather than a redirect to t
             kw['answers'] = 'true'
         return self.build('questions', Question, 'questions', kw)
 
-    def users_with_badge(self, bid, **kw):
-        """Returns the set of all the users who have been awarded the badge with the ID 'bid'."""
-        return self.build('badges/' + str(bid), User, 'users', kw)
+    def badge_recipients(self, bids, **kw):
+        """Returns a set of badges recently awarded on the site, constrained to those with the given IDs, with the 'user' property set describing the user to whom it was awarded."""
+        return self.build('badges/%s/recipients' % self.vectorise(bids), Badge, 'badges', kw)
 
     def all_badges(self, **kw):
         """Returns the set of all the badges which can be awarded on the site, excluding those which are awarded for specific tags."""
         return self.build('badges', Badge, 'badges', kw)
 
     def badges(self, ids = None, **kw):
-        """Returns the users with the badges with IDs."""
+        """Returns the badge objectss with the given IDs."""
         if ids == None:
             return self._user_prop('badges', Badge, 'users', kw)
         else:
