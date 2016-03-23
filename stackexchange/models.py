@@ -197,8 +197,9 @@ class Question(JSONModel):
     """Describes a question on a StackExchange site."""
     transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count',
         'view_count', 'score', 'community_owned', 'title', 'body',
-        'body_markdown',
+        'body_markdown', 'is_answered', 'link', 'answer_count',
         ('creation_date', UNIXTimestamp),
+        ('last_activity_date', UNIXTimestamp),
         ('timeline', LazySequenceField(TimelineEvent, 'questions/{id}/timeline')),
         ('revisions', LazySequenceField(PostRevision, 'posts/{id}/revisions')),
         ('comments', LazySequenceField(Comment, 'questions/{id}/comments', filter = '!-*7AsUyrEan0')),
