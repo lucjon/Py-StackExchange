@@ -239,8 +239,8 @@ class Question(JSONModel):
 
         self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.id)
 
-    def fetch_callback(self, _, site):
-        return site.question(self.id)
+    def fetch_callback(self, _):
+        return self.site.question(self.id)
 
     def linked(self):
         return self.site.questions(linked_to = self.id)
