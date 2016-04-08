@@ -65,7 +65,7 @@ class Site(object):
     """Stores information and provides methods to access data on a StackExchange site. This class is the 'root' of the API - all data is accessed
 through here."""
 
-    def __init__(self, domain, app_key = None, cache = 1800, impose_throttling = False):
+    def __init__(self, domain, app_key = None, cache = 1800, impose_throttling = False, force_http = False):
         self.domain = domain
         self.app_key = app_key
         self.api_version = '2.2'
@@ -73,6 +73,7 @@ through here."""
         self.impose_throttling = impose_throttling
         self.throttle_stop = True
         self.cache_options = {'cache': False} if cache == 0 else {'cache': True, 'cache_age': cache}
+        self.force_http = force_http
 
         self.include_body = False
         self.include_comments = False
@@ -137,7 +138,7 @@ through here."""
             return str(ob).lower()
 
     def _request(self, to, params):
-        url = 'http://api.stackexchange.com/' + self.api_version + '/' + to
+        url = 'api.stackexchange.com/' + self.api_version + '/' + to
         params['site'] = params.get('site', self.root_domain)
 
         new_params = {}
@@ -153,7 +154,7 @@ through here."""
         if self.app_key != None:
             new_params['key'] = self.app_key
 
-        request_properties = dict([(x, getattr(self, x)) for x in ('impose_throttling', 'throttle_stop')])
+        request_properties = dict([(x, getattr(self, x)) for x in ('impose_throttling', 'throttle_stop', 'force_http')])
         request_properties.update(self.cache_options)
         request_mgr = WebRequestManager(**request_properties)
 

@@ -48,7 +48,7 @@ class StackAuth(object):
 
     def url(self, u):
         # We need to stick an API version in now for v2.x
-        return 'http://' + self.domain + '/' + self.api_version + '/' + u
+        return self.domain + '/' + self.api_version + '/' + u
 
     def build(self, url, typ, collection, kw = {}):
         mgr = WebRequestManager()

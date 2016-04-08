@@ -29,7 +29,7 @@ class WebRequestManager(object):
     debug = False
     cache = {}
 
-    def __init__(self, impose_throttling = False, throttle_stop = True, cache = True, cache_age = 1800):
+    def __init__(self, impose_throttling = False, throttle_stop = True, cache = True, cache_age = 1800, force_http = False):
         # Whether to monitor requests for overuse of the API
         self.impose_throttling = impose_throttling
         # Whether to throw an error (when True) if the limit is reached, or wait until another request
@@ -41,6 +41,8 @@ class WebRequestManager(object):
         self.cache_age = cache_age
         # The time at which we should resume making requests after receiving a 'backoff' for each method
         self.backoff_expires = {}
+        # Force the use of HTTP instead of HTTPS
+        self.force_http = force_http
     
     # When we last made a request
     window = datetime.datetime.now()
@@ -62,6 +64,9 @@ class WebRequestManager(object):
         # Quote URL fields (mostly for 'c#'), but not : in http://
         components = url.split('/')
         url = components[0] + '/'  + ('/'.join(urllib.parse.quote(path) for path in components[1:]))
+
+        # Then add in the appropriate protocol
+        url = '%s://%s' % ('http' if self.force_http else 'https', url)
 
         done = False
         for k, v in params.items():
