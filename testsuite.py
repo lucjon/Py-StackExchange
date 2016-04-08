@@ -184,6 +184,16 @@ class DataTests(unittest.TestCase):
         results = self.site.badge(22).recipients
         self.assertNotEqual(next(results), None)
 
+    def test_accepted_answer(self):
+        # our favourite test question...
+        question = self.site.question(4)
+        self.assertEqual(type(question.accepted_answer), stackexchange.Answer)
+        self.assertEqual(question.accepted_answer.id, question.accepted_answer_id)
+
+        ans = question.accepted_answer
+        ans.fetch()
+        self.assertTrue(hasattr(ans, 'score'))
+
 
 class PlumbingTests(unittest.TestCase):
     def setUp(self):

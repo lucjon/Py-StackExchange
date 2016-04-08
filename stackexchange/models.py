@@ -193,18 +193,38 @@ class Answer(JSONModel):
     def __repr__(self):
         return '<Answer %d @ %x>' % (self.id, id(self))
 
+class IDPartial(ComplexTransform):
+    def __init__(self, model_type, fetch_callback):
+        self.partial = PartialModelRef(model_type, fetch_callback)
+
+    def __call__(self, key, value, model):
+        return self.partial(key, {'id': value}, model)
+
 class Question(JSONModel):
     """Describes a question on a StackExchange site."""
     transfer = ('tags', 'favorite_count', 'up_vote_count', 'down_vote_count',
         'view_count', 'score', 'community_owned', 'title', 'body',
-        'body_markdown', 'is_answered', 'link', 'answer_count',
+        'body_markdown', 'is_answered', 'link', 'answer_count', 'can_close',
+        'can_flag', 'close_vote_count', 'closed_reason', 'comment_count',
+        'community_owned_date', 'delete_vote_count', 'down_vote_count',
+        'downvoted', 'favorite_count', 'favorited', 'is_answered', 
+        'accepted_answer_id', 'question_id', 'bounty_amount', 'upvoted',
+        'reopen_vote_count', 'share_link', 'up_vote_count',
         ('creation_date', UNIXTimestamp),
+        ('last_edit_date', UNIXTimestamp),
         ('last_activity_date', UNIXTimestamp),
+        ('bounty_closes_date', UNIXTimestamp),
+        ('locked_date', UNIXTimestamp),
+        ('protected_date', UNIXTimestamp),
+        # XXX
+        #('bounty_user', PartialModelRef(User, lambda s: s.site.user(s.id), extend = True)),
+        #('last_editor', PartialModelRef(User, lambda s: s.site.user(s.id), extend = True)),
         ('timeline', LazySequenceField(TimelineEvent, 'questions/{id}/timeline')),
         ('revisions', LazySequenceField(PostRevision, 'posts/{id}/revisions')),
         ('comments', LazySequenceField(Comment, 'questions/{id}/comments', filter = '!-*7AsUyrEan0')),
         ('answers', ListOf(ModelRef(Answer))))
-    alias = (('id', 'question_id'),)
+    alias = (('id', 'question_id'),
+             ('accepted_answer', 'accepted_answer_id', IDPartial(Answer, lambda a: a.site.answer(a.id))))
 
     def _extend(self, json, site):
         if hasattr(json, 'owner') and 'user_id' in json.owner:
