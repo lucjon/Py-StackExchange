@@ -230,6 +230,10 @@ through here."""
         """Retrieves a list of the moderators on the site."""
         return self.build('users/moderators', User, 'users', kw)
 
+    def moderators_elected(self, **kw):
+        """Retrieves a list of the elected moderators on the site."""
+        return self.build('users/moderators/elected', User, 'users', kw)
+
     def answer(self, nid, **kw):
         """Retrieves an object describing the answer with the ID `nid`."""
         a, = self.answers((nid,), **kw)

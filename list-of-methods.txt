@@ -286,6 +286,7 @@ Site(domain, app_key = None, cache = 1800):
 	users(ids = [], **) @users @users-by-ids
 	users_by_name(name, **)
 	moderators(**) @moderators
+	moderators_elected(**) @elected-moderators
 	answer(nid, **) @answers-by-ids
 	answers(ids = None, **) @answers @answers-by-ids
 	comment(nid, **) @comments-by-ids
