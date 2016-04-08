@@ -1,11 +1,11 @@
 #!/bin/bash
 
 function test_py2 {
-	python2 ./testsuite.py
+	python2 ./testsuite.py $@
 }
 
 function test_py3 {
-	python3 ./testsuite.py
+	python3 ./testsuite.py $@
 }
 
-test_py3 && test_py2
+test_py3 $@ && test_py2 $@
