@@ -194,6 +194,11 @@ class DataTests(unittest.TestCase):
         ans.fetch()
         self.assertTrue(hasattr(ans, 'score'))
 
+    def test_moderators_elected(self):
+        moderators = self.site.moderators_elected()
+        self.assertGreater(len(moderators), 0)
+        self.assertEqual(type(moderators[0]), stackexchange.User)
+
 
 class PlumbingTests(unittest.TestCase):
     def setUp(self):
