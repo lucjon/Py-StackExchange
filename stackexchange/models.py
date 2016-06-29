@@ -162,24 +162,17 @@ class Answer(JSONModel):
 
         self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.question_id) + '/' + str(self.id) + '#' + str(self.id)
 
-    def _get_user(self, id):
+    @property
+    def owner(self):
         if self._owner is None:
-            self._owner = self.site.user(id)
+            self._owner = self.site.user(self.owner_id)
         return self._owner
-
-    def _set_user(self, ob):
-        self._owner = ob
-
-    def _get_quest(self, id):
+    
+    @property
+    def question(self):
         if self._question is None:
-            self._question = self.site.question(id)
+            self._question = self.site.question(self.question_id)
         return self._question
-
-    def _set_quest(self, ob):
-        self._question = ob
-
-    question = property(_get_quest, _set_quest)
-    owner = property(_get_user, _set_user)
 
     def fetch_callback(self, _, site):
         return site.answer(self.id)

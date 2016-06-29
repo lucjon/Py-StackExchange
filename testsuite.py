@@ -49,6 +49,16 @@ class DataTests(unittest.TestCase):
     def test_fetch_answer(self):
         s = self.site.answer(ANSWER_ID)
 
+    def test_fetch_answer_owner(self):
+        s = self.site.answer(ANSWER_ID)
+        self.assertIsInstance(s.owner_id, int)
+        self.assertIsNotNone(s.owner)
+
+    def test_fetch_answer_question(self):
+        s = self.site.answer(ANSWER_ID)
+        self.assertIsInstance(s.question_id, int)
+        self.assertIsNotNone(s.question)
+
     def test_fetch_answer_comment(self):
         # First try the comments on an answer with lots of comments
         # http://stackoverflow.com/a/22389702
