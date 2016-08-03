@@ -119,7 +119,7 @@ TagWiki:
 	excerpt_editor = User.partial(last_excerpt_editor['user_id'])
 
 Period(Enumeration):
-	AllTime = 'all-time'
+	AllTime = 'all_time'
 	Month = 'month'
 
 TopUser:
