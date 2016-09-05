@@ -191,7 +191,7 @@ through here."""
         return JSONMangler.json_to_resultset(self, json, typ, collection, (self, url, typ, collection, kw))
 
     def build_from_snippet(self, json, typ):
-        return StackExchangeResultSet([typ(x, self) for x in json])
+        return StackExchangeResultset([typ(x, self) for x in json])
 
     def vectorise(self, lst, or_of_type = None):
         # Ensure we're always dealing with an iterable
