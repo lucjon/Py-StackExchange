@@ -114,8 +114,9 @@ class DataTests(unittest.TestCase):
 
     def test_tag_related(self):
         related = self.site.tag_related('java', page=1, pagesize=40)
-        self.assertEqual(related[0].name, 'android')
-        self.assertEqual(related[1].name, 'swing')
+        names = tuple(tag.name for tag in related[:10])
+        self.assertIn('android', names)
+        self.assertIn('swing', names)
 
     def test_badge_name(self):
         badge = self.site.badge(name = 'Nice Answer')
