@@ -300,7 +300,7 @@ required - not on object creation."""
         if self.count != None:
             return self.count
         else:
-            raise NeedsAwokenError(self)
+            raise NeedsAwokenError(repr(self))
 
     def __repr__(self):
         if self.count is None:
