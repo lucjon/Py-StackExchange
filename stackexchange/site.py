@@ -220,6 +220,9 @@ through here."""
 
     def users(self, ids = [], **kw):
         """Retrieves a list of the users with the IDs specified in the `ids' parameter."""
+        if 'filter' not in kw:
+            # Include answer_count, etc. in the default filter
+            kw['filter'] = '!-*f(6q3e0kcP'
         return self._get(User, ids, 'users', kw)
     
     def users_by_name(self, name, **kw):

@@ -31,9 +31,9 @@ A number of site URLs come predefined; the list is rebuilt every so often. A new
 
 Once you have your site object, you can start to get some data dumped (using Py3/print_function syntax):
 
-    my_favourite_guy = so.user(41981)
-	print(my_favourite_guy.reputation.format())
-	print(len(my_favourite_guy.answers), 'answers')
+    u = so.user(41981)
+    print(u.reputation.format())
+    print(u.answers.count, 'answers')
 
 ## API Keys
 If you're planning to use the API in an application or web service, especially one which will be making a large number of requests, you'll want to sign up for an API key on [StackApps](http://stackapps.com).
