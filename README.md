@@ -5,22 +5,26 @@ Py-StackExchange is a simple Python binding to the API of the Stack Exchange net
 
 > **NOTE**: Py-StackExchange is not an official product of, and is not affiliated in any way, with Stack Exchange Inc. 
 
-# Getting Started
+## Getting Started
 You can get Py-StackExchange in two ways:
+  
+  1. Using PIP.
+  		 
+		 pip install py-stackexchange
 
-  1. Clone the Git repository from Github.  
+  2. Clone the Git repository from Github.  
      If feasible, this is the recommended approach - you'll always get the latest code with the newest features.
-
+	
 	     git clone git://github.com/lucjon/Py-StackExchange.git
 
 	 You'll need to set up paths, etc. on your own though.
 
-  2. Install from the Python Package Index (PyPI)  
+  3. Install from the Python Package Index (PyPI)  
      It's easier to install the library with the easy_install command, but be warned: while major bug fixes will be deployed as soon as possible to PyPI, you might need to wait a while for new features.
 
 	     easy_install Py-StackExchange
 
-# Using the Library
+## Using the Library
 
 Fire up your Python interpreter and import the stackexchange module. Yay, you're done!
 
@@ -75,7 +79,7 @@ The API uses a page-based system for navigating large datasets. This means that 
 
 The `extend_next()` function returns a list with the extra data appended, `fetch_next()` returns just the new data.
 
-# Next Steps
+## Next Steps
 Read, and run, the example code. The programs are simple and cover most of the basic usage of the API. Many of the examples also have wiki pages on the Github site.
 
 If you encounter any problems at all, feel free to leave an answer on [StackApps](https://stackapps.com/questions/198/py-stackexchange-an-api-wrapper-for-python), or to e-mail me at `lucas @ lucasjones . co.uk`. Yay, vanity domains.
