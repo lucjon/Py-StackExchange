@@ -1,6 +1,9 @@
-Py-StackExchange is a simple Python binding to the API of the StackExchange network of sites.
+# [Py-StackExchange](http://stackapps.com/questions/198/py-stackexchange-an-api-wrapper-for-python)
 
-**NOTE**: Py-StackExchange is not an official product of, and is not affiliated in any way, with Stack Overflow Internet Services, Inc. 
+
+Py-StackExchange is a simple Python binding to the API of the Stack Exchange network of sites.
+
+> **NOTE**: Py-StackExchange is not an official product of, and is not affiliated in any way, with Stack Exchange Inc. 
 
 # Getting Started
 You can get Py-StackExchange in two ways:
@@ -8,14 +11,14 @@ You can get Py-StackExchange in two ways:
   1. Clone the Git repository from Github.  
      If feasible, this is the recommended approach - you'll always get the latest code with the newest features.
 
-	 git clone git://github.com/lucjon/Py-StackExchange.git
+	     git clone git://github.com/lucjon/Py-StackExchange.git
 
 	 You'll need to set up paths, etc. on your own though.
 
   2. Install from the Python Package Index (PyPI)  
      It's easier to install the library with the easy_install command, but be warned: while major bug fixes will be deployed as soon as possible to PyPI, you might need to wait a while for new features.
 
-	 easy_install Py-StackExchange
+	     easy_install Py-StackExchange
 
 # Using the Library
 
