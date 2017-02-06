@@ -174,8 +174,8 @@ class Answer(JSONModel):
             self._question = self.site.question(self.question_id)
         return self._question
 
-    def fetch_callback(self, _, site):
-        return site.answer(self.id)
+    def fetch_callback(self, _, site, **kwargs):
+        return site.answer(self.id, **kwargs)
 
     def __unicode__(self):
         return u'Answer %d' % self.id
@@ -232,8 +232,8 @@ class Question(JSONModel):
 
         self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.id)
 
-    def fetch_callback(self, _):
-        return self.site.question(self.id)
+    def fetch_callback(self, _, **kwargs):
+        return self.site.question(self.id, **kwargs)
 
     def linked(self):
         return self.site.questions(linked_to = self.id)
