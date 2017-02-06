@@ -24,7 +24,7 @@ class JSONModel(object):
         transfer = self.transfer if hasattr(self, 'transfer') else ()
         fields = ([A + (None,) for A in alias if len(A) == 2] +
                   [(k, k, None) for k in transfer if isinstance(k, str)] +
-                  [A for A in alias if len(A) == 3] + 
+                  [A for A in alias if len(A) == 3] +
                   [(k[0],) + k for k in transfer if not isinstance(k, str)])
 
         for dest, key, transform in fields:
@@ -45,10 +45,10 @@ class JSONModel(object):
         if hasattr(self, '_extend') and not skip_ext:
             self._extend(self.json_ob, site)
 
-    def fetch(self):
+    def fetch(self, **kwargs):
         """Fetches all the data that the model can describe, not just the attributes which were specified in the original response."""
         if hasattr(self, 'fetch_callback'):
-            res = self.fetch_callback(self)
+            res = self.fetch_callback(self, **kwargs)
 
             if isinstance(res, dict):
                 self.__init__(res, self.site)
@@ -184,7 +184,7 @@ class StackExchangeError(Exception):
         self.code = code
         self.name = name
         self.message = message
-    
+
     def __str__(self):
         if self.code == self.UNKNOWN:
             return 'unrecognised error'
@@ -356,7 +356,7 @@ class JSONMangler(object):
         # no longer variable in v2.x, having been replaced by a generic field
         # 'items'. To perhaps be removed completely at some later point.
         items = []
-        
+
         # create strongly-typed objects from the JSON items
         for json_item in json['items']:
             json_item['_params_'] = params[-1] # convenient access to the kw hash
