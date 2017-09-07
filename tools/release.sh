@@ -14,11 +14,11 @@ echo "Options set by environment variables: `usage IGNORE_TEST` ; `usage BUILD_W
 read
 
 # Re-generate site constants
-constsfile=$(mktemp)
-if PYTHONPATH=. python tools/_genconsts.py > "$constsfile"; then
-	cp "$constsfile" stackexchange/sites.py
-fi
-rm "$constsfile"
+#constsfile=$(mktemp)
+#if PYTHONPATH=. python tools/_genconsts.py > "$constsfile"; then
+#	cp "$constsfile" stackexchange/sites.py
+#fi
+#rm "$constsfile"
 
 if ! ( [ "$IGNORE_TEST" == "yes" ] || tools/test ); then
 	echo "The test suite failed. Fix it!"

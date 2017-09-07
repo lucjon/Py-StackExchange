@@ -204,6 +204,7 @@ class Question(JSONModel):
         'accepted_answer_id', 'question_id', 'bounty_amount', 'upvoted',
         'reopen_vote_count', 'share_link', 'up_vote_count',
         ('creation_date', UNIXTimestamp),
+        ('closed_date', UNIXTimestamp),
         ('last_edit_date', UNIXTimestamp),
         ('last_activity_date', UNIXTimestamp),
         ('bounty_closes_date', UNIXTimestamp),

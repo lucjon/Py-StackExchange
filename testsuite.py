@@ -44,7 +44,7 @@ class DataTests(unittest.TestCase):
 
     def test_fetch_question(self):
         s = self.site.question(QUESTION_ID)
-        self.assertEqual(html_unescape(s.title), u"When setting a form's opacity should I use a decimal or double?")
+        self.assertEqual(html_unescape(s.title), u"While applying opacity to a form should we use a decimal or double value?")
 
     def test_fetch_answer(self):
         s = self.site.answer(ANSWER_ID)
