@@ -343,7 +343,7 @@ class User(JSONModel):
     """Describes a user on a StackExchange site."""
     transfer = ('display_name', 'profile_image', 'age', 'website_url',
         'location', 'about_me', 'view_count', 'up_vote_count',
-        'down_vote_count', 'account_id', 'profile_image',
+        'down_vote_count', 'account_id', 'profile_image', 'is_employee',
         ('creation_date', UNIXTimestamp),
         ('last_access_date', UNIXTimestamp),
         ('reputation', FormattedReputation),
