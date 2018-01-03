@@ -167,15 +167,15 @@ class Answer(JSONModel):
         if self._owner is None:
             self._owner = self.site.user(self.owner_id)
         return self._owner
-    
+
     @property
     def question(self):
         if self._question is None:
             self._question = self.site.question(self.question_id)
         return self._question
 
-    def fetch_callback(self, _, site):
-        return site.answer(self.id)
+    def fetch_callback(self, _, site, **kwargs):
+        return site.answer(self.id, **kwargs)
 
     def __unicode__(self):
         return u'Answer %d' % self.id
@@ -200,7 +200,7 @@ class Question(JSONModel):
         'body_markdown', 'is_answered', 'link', 'answer_count', 'can_close',
         'can_flag', 'close_vote_count', 'closed_reason', 'comment_count',
         'community_owned_date', 'delete_vote_count', 'down_vote_count',
-        'downvoted', 'favorite_count', 'favorited', 'is_answered', 
+        'downvoted', 'favorite_count', 'favorited', 'is_answered',
         'accepted_answer_id', 'question_id', 'bounty_amount', 'upvoted',
         'reopen_vote_count', 'share_link', 'up_vote_count',
         ('creation_date', UNIXTimestamp),
@@ -218,7 +218,7 @@ class Question(JSONModel):
         ('comments', LazySequenceField(Comment, 'questions/{id}/comments', filter = '!-*7AsUyrEan0')),
         ('answers', ListOf(ModelRef(Answer))))
     alias = (('id', 'question_id'),
-             ('accepted_answer', 'accepted_answer_id', IDPartial(Answer, lambda a: a.site.answer(a.id))))
+             ('accepted_answer', 'accepted_answer_id', IDPartial(Answer, lambda a, **kwargs: a.site.answer(a.id, **kwargs))))
 
     def _extend(self, json, site):
         if hasattr(json, 'owner') and 'user_id' in json.owner:
@@ -233,8 +233,8 @@ class Question(JSONModel):
 
         self.url = 'http://' + self.site.root_domain + '/questions/' + str(self.id)
 
-    def fetch_callback(self, _):
-        return self.site.question(self.id)
+    def fetch_callback(self, _, **kwargs):
+        return self.site.question(self.id, **kwargs)
 
     def linked(self):
         return self.site.questions(linked_to = self.id)
