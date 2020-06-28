@@ -24,7 +24,7 @@ class JSONModel(object):
         transfer = self.transfer if hasattr(self, 'transfer') else ()
         fields = ([A + (None,) for A in alias if len(A) == 2] +
                   [(k, k, None) for k in transfer if isinstance(k, str)] +
-                  [A for A in alias if len(A) == 3] + 
+                  [A for A in alias if len(A) == 3] +
                   [(k[0],) + k for k in transfer if not isinstance(k, str)])
 
         for dest, key, transform in fields:
@@ -184,7 +184,7 @@ class StackExchangeError(Exception):
         self.code = code
         self.name = name
         self.message = message
-    
+
     def __str__(self):
         if self.code == self.UNKNOWN:
             return 'unrecognised error'
@@ -216,10 +216,10 @@ to fetch the next page."""
 
         return instance
 
-    def reload(self):
+    def reload(self, **kw):
         """Refreshes the data in the resultset with fresh API data. Note that this doesn't work with extended resultsets."""
         # kind of a cheat, but oh well
-        return self.fetch_page(self.page)
+        return self.fetch_page(self.page, **kw)
 
     def fetch_page(self, page, **kw):
         """Returns a new resultset containing data from the specified page of the results. It re-uses all parameters that were passed in
@@ -249,9 +249,12 @@ to the initial function which created the resultset."""
         """Returns a new resultset containing data from this resultset AND from the next page."""
         return self.fetch_extended(self.page + 1)
 
-    def fetch(self):
-        # Do nothing, but allow multiple fetch calls
-        return self
+    def fetch(self, **kw):
+        """Return self if parameters are the same; otherwise reload from API"""
+        if kw == self.build_info[4]:
+            return self
+        return self.reload(**kw)
+
 
     def __iter__(self):
         return self.next()
@@ -356,7 +359,7 @@ class JSONMangler(object):
         # no longer variable in v2.x, having been replaced by a generic field
         # 'items'. To perhaps be removed completely at some later point.
         items = []
-        
+
         # create strongly-typed objects from the JSON items
         for json_item in json['items']:
             json_item['_params_'] = params[-1] # convenient access to the kw hash
