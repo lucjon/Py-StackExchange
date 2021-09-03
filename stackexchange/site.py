@@ -292,7 +292,7 @@ unlike on the actual site, you will receive an error rather than a redirect to t
         return self.build('badges', Badge, 'badges', kw)
 
     def badges(self, ids = None, **kw):
-        """Returns the badge objectss with the given IDs."""
+        """Returns the badge objects with the given IDs."""
         if ids == None:
             return self._user_prop('badges', Badge, 'users', kw)
         else:

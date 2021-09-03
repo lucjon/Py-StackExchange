@@ -3,7 +3,7 @@ import logging
 import datetime, re, stackauth, stackexchange, stackexchange.web, unittest
 import stackexchange.sites as stacksites
 from stackexchange.core import StackExchangeError
-# for Python 3 compatiblity
+# for Python 3 compatibility
 try:
     import htmlentitydefs
 except ImportError:
